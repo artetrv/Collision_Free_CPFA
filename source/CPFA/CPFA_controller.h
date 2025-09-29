@@ -46,7 +46,8 @@ class CPFA_controller : public BaseController {
   Real curr_time_in_seconds; 
     Real last_time_in_seconds; 
         
-
+		std::vector<argos::CVector2> robotMemory;
+		Real lastMemoryStorageTime;
 	private:
   string 			controllerID;//qilu 07/26/2016
 
@@ -74,6 +75,9 @@ class CPFA_controller : public BaseController {
 		size_t RobotDensity; //qilu 06/2023
 		size_t MaxTrailSize;
 		size_t SearchTime;//for informed search
+		
+		/* Grid-based search parameters */
+		int VisitCountThreshold; // Threshold for avoiding frequently visited areas
   
   size_t           searchingTime; //qilu 09/26
   size_t           travelingTime;//qilu 09/26

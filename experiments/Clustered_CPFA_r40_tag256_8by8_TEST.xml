@@ -5,7 +5,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0"/>
-    <experiment length="240" random_seed="0" ticks_per_second="32"/> <!-- the length is in seconds. The number of ticks is ticks_per_second*length-->
+    <experiment length="240" random_seed="984063" ticks_per_second="32"/> <!-- the length is in seconds. The number of ticks is ticks_per_second*length-->
   </framework>
 
   <!-- *************** -->
@@ -89,14 +89,14 @@
            <distribute>
       <position center="1, 1, 0.0" distances="0.3, 0.3, 0.0" layout="4, 3, 1" method="grid"/>
       <orientation method="constant" values="0.0, 0.0, 0.0"/>
-      <entity max_trials="100" quantity="4">
+      <entity max_trials="100" quantity="8">
         <foot-bot id="F0">
           <controller config="CPFA"/>
         </foot-bot>
       </entity>
     </distribute>
 
-
+<!-- 
            <distribute>
       <position center="1, -1, 0.0" distances="0.3, 0.3, 0.0" layout="4, 3, 1" method="grid"/>
       <orientation method="constant" values="0.0, 0.0, 0.0"/>
@@ -126,7 +126,7 @@
           <controller config="CPFA"/>
         </foot-bot>
       </entity>
-    </distribute>
+    </distribute> -->
     
   </arena> 
     
@@ -149,11 +149,15 @@
 
 <qt-opengl>
       <camera>
-        <placement idx="0" position="  0, 0, 10" look_at="0, 0, 0" lens_focal_length="25"/>
+        <placements>
+          <!-- <placement index="0" position="0,0,12" look_at="0,0,0" up="1,0,0" lens_focal_length="35"/> -->
+          <placement index="0" position="0,0,12" look_at="0,0,0" up="-1,0,0" lens_focal_length="35"/>
+
+        </placements>
       </camera>
       <user_functions label="CPFA_qt_user_functions"/>
     </qt-opengl>
 
-  </visualization> -->
+  </visualization>
 
 </argos-configuration>

@@ -21,7 +21,9 @@ CPFA_controller::CPFA_controller() :
     m_pcLEDs(NULL),
     TrailColor(CColor::BLUE),
         updateFidelity(false),
-        last_time_in_seconds(0)
+        last_time_in_seconds(0),
+        lastMemoryStorageTime(0.0),
+        VisitCountThreshold(3) // Default threshold of 3 visits
 {
 }
 
@@ -98,21 +100,41 @@ void CPFA_controller::ControlStep() {
 	// Add line so we can draw the trail
 	curr_time_in_seconds = (argos::Real)(SimulationTick() / SimulationTicksPerSecond()); 
      
+	// Periodic location storage every 10 seconds - only during random search
+	if(curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && !isHoldingFood && !isInformed) {
+		argos::CVector2 currentPosition = GetPosition();
+		
+		// Add current position to robotMemory
+		robotMemory.push_back(currentPosition);
+		
+		// Maintain sliding window of maximum 5 locations
+		if(robotMemory.size() > 5) {
+			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry (most efficient for vector)
+		}
+		
+		// Update the last storage time
+		lastMemoryStorageTime = curr_time_in_seconds;
+		
+		// Debug output to show stored locations
+		// argos::LOG << "Robot " << controllerID << " stored location: " << currentPosition 
+		// 		   << " (Total stored: " << robotMemory.size() << " locations)" << std::endl;
+	}
+     
 	if(curr_time_in_seconds - last_time_in_seconds >= 0)
 	{
-		CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
+		// CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
 		
-		CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
-		CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
-		CRay3 targetRay(target3d, position3d);
-		myTrail.push_back(targetRay);
-		LoopFunctions->Trajectory[controllerID].push_back(position2d);
-		//since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
-		LoopFunctions->TargetRayList.push_back(targetRay);
-		LoopFunctions->TargetRayColorList.push_back(TrailColor);
-		//argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
-		previous_position = GetPosition();
-		last_time_in_seconds = curr_time_in_seconds;
+		// CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
+		// CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
+		// CRay3 targetRay(target3d, position3d);
+		// myTrail.push_back(targetRay);
+		// LoopFunctions->Trajectory[controllerID].push_back(position2d);
+		// //since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
+		// LoopFunctions->TargetRayList.push_back(targetRay);
+		// LoopFunctions->TargetRayColorList.push_back(TrailColor);
+		// //argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
+		// previous_position = GetPosition();
+		// last_time_in_seconds = curr_time_in_seconds;
      }
 	//UpdateTargetRayList();
 	CPFA();
@@ -127,6 +149,10 @@ void CPFA_controller::Reset() {
     ResourceDensity = 0;
     RobotDensity = 0;
     collisionDelay = 0;
+    
+    // Reset robot memory tracking
+    robotMemory.clear();
+    lastMemoryStorageTime = 0.0;
     
   	LoopFunctions->CollisionTime=0; //qilu 09/26/2016
     
@@ -494,6 +520,23 @@ void CPFA_controller::Returning() {
 
 	// Are we there yet? (To the nest, that is.)
 	if(IsInTheNest()) {
+
+		/* LOGIC TO SEND LAST 5 LOCATIONS TO CENTRAL CONTROLLER*/
+		if(!robotMemory.empty()) {
+			argos::LOG << "Robot " << controllerID << " returning to nest with " 
+					   << robotMemory.size() << " stored locations:" << std::endl;
+			
+			for(size_t i = 0; i < robotMemory.size(); i++) {
+				argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
+			}
+			
+			// Send locations to the central controller to update the grid
+			LoopFunctions->receiveRobotMemory(controllerID, robotMemory);
+			
+			// Clear the memory after sending (optional - depends on your requirements)
+			robotMemory.clear();
+		}
+
 		// Based on a Poisson CDF, the robot may or may not create a pheromone
 	    // located at the last place it picked up food.
 	    argos::Real poissonCDF_pLayRate    = GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfLayingPheromone);
@@ -590,32 +633,68 @@ void CPFA_controller::Returning() {
 }
 	
 void CPFA_controller::SetRandomSearchLocation() {
-	argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
 	argos::Real x = 0.0, y = 0.0;
-
-	/* north wall */
-	if(random_wall < 0.25) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMax();
-	}
-	/* south wall */
-	else if(random_wall < 0.5) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMin();
-	}
-	/* east wall */
-	else if(random_wall < 0.75) {
-		x = ForageRangeX.GetMax();
-		y = RNG->Uniform(ForageRangeY);
-	}
-	/* west wall */
-	else {
-		x = ForageRangeX.GetMin();
-		y = RNG->Uniform(ForageRangeY);
+	argos::CVector2 candidateTarget;
+	int visitCount = 0;
+	int maxAttempts = 50; // Prevent infinite loops
+	int attempts = 0;
+	
+	do {
+		attempts++;
+		argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
+		
+		/* Generate random target coordinates based on wall selection */
+		/* north wall */
+		if(random_wall < 0.25) {
+			x = RNG->Uniform(ForageRangeX);
+			y = ForageRangeY.GetMax();
+		}
+		/* south wall */
+		else if(random_wall < 0.5) {
+			x = RNG->Uniform(ForageRangeX);
+			y = ForageRangeY.GetMin();
+		}
+		/* east wall */
+		else if(random_wall < 0.75) {
+			x = ForageRangeX.GetMax();
+			y = RNG->Uniform(ForageRangeY);
+		}
+		/* west wall */
+		else {
+			x = ForageRangeX.GetMin();
+			y = RNG->Uniform(ForageRangeY);
+		}
+		
+		// Create candidate target coordinate
+		candidateTarget = argos::CVector2(x, y);
+		
+		// Check visit count for this grid cell
+		visitCount = LoopFunctions->getGridVisitCount(candidateTarget);
+		
+		// Debug output
+		if(attempts <= 5) { // Only log first few attempts to avoid spam
+			argos::LOG << "Robot " << controllerID << " attempt " << attempts 
+					   << ": Target " << candidateTarget << " has visit count " << visitCount 
+					   << " (threshold: " << VisitCountThreshold << ")" << std::endl;
+		}
+		
+		// If visit count is acceptable or we've exceeded max attempts, break
+		if(visitCount <= VisitCountThreshold || attempts >= maxAttempts) {
+			break;
+		}
+		
+	} while(true);
+	
+	if(attempts >= maxAttempts) {
+		argos::LOG << "Robot " << controllerID << " reached max attempts (" << maxAttempts 
+				   << "), using target with visit count " << visitCount << std::endl;
+	} else if(visitCount <= VisitCountThreshold) {
+		argos::LOG << "Robot " << controllerID << " found acceptable target " << candidateTarget 
+				   << " with visit count " << visitCount << " after " << attempts << " attempts" << std::endl;
 	}
 		
 	SetIsHeadingToNest(true); // Turn off error for this
-	SetTarget(argos::CVector2(x, y));
+	SetTarget(candidateTarget);
 }
 
 /*****

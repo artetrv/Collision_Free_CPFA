@@ -103,6 +103,9 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 
         ArenaWidth = ArenaSize[0];
         
+        // Create the grid with a default cell size of 1 meters
+        create_grid(1);
+        
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
             NestRadius *= sqrt(1 + log(ArenaWidth)/log(2));
@@ -663,6 +666,144 @@ void CPFA_loop_functions::ConfigureFromGenome(Real* g)
 	RateOfSiteFidelity                = g[4];
 	RateOfLayingPheromone             = g[5];
 	RateOfPheromoneDecay              = g[6];
+}
+
+void CPFA_loop_functions::create_grid(argos::Real cell_size) {
+	// Store the cell size
+	CellSize = cell_size;
+	
+	// Get arena dimensions
+	argos::CVector3 ArenaSize = GetSpace().GetArenaSize();
+	argos::Real arena_width = ArenaSize.GetX();
+	argos::Real arena_height = ArenaSize.GetY();
+	
+	// Calculate grid dimensions by dividing arena size by cell size
+	GridWidth = static_cast<size_t>(std::ceil(arena_width / cell_size));
+	GridHeight = static_cast<size_t>(std::ceil(arena_height / cell_size));
+	
+	// Initialize the 2D grid with zeros
+	Grid.clear();
+	Grid.resize(GridHeight, std::vector<int>(GridWidth, 0));
+	
+	// Print grid information
+	argos::LOG << "Grid created with parameters:" << std::endl;
+	argos::LOG << "  Arena size: " << arena_width << " x " << arena_height << std::endl;
+	argos::LOG << "  Cell size: " << cell_size << std::endl;
+	argos::LOG << "  Grid dimensions: " << GridWidth << " x " << GridHeight << " cells" << std::endl;
+	argos::LOG << "  Total cells: " << GridWidth * GridHeight << std::endl;
+	
+	// Print the grid visualization (showing a sample if it's too large)
+	argos::LOG << "Grid visualization (all cells initialized to 0):" << std::endl;
+	
+	// If grid is small enough, print the entire grid
+	if (GridWidth <= 20 && GridHeight <= 20) {
+		for (size_t i = 0; i < GridHeight; i++) {
+			std::string row = "";
+			for (size_t j = 0; j < GridWidth; j++) {
+				row += std::to_string(Grid[i][j]) + " ";
+			}
+			argos::LOG << row << std::endl;
+		}
+	} else {
+		// For larger grids, just show the first few rows and columns
+		argos::LOG << "Grid is large (" << GridWidth << "x" << GridHeight << "), showing first 10x10 section:" << std::endl;
+		size_t max_rows = std::min(GridHeight, static_cast<size_t>(10));
+		size_t max_cols = std::min(GridWidth, static_cast<size_t>(10));
+		
+		for (size_t i = 0; i < max_rows; i++) {
+			std::string row = "";
+			for (size_t j = 0; j < max_cols; j++) {
+				row += std::to_string(Grid[i][j]) + " ";
+			}
+			if (GridWidth > 10) row += "...";
+			argos::LOG << row << std::endl;
+		}
+		if (GridHeight > 10) {
+			argos::LOG << "..." << std::endl;
+		}
+	}
+}
+
+void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory) {
+	argos::LOG << "Receiving robot memory from " << robotId << " with " << robotMemory.size() << " locations" << std::endl;
+	
+	// Get arena dimensions to convert world coordinates to grid coordinates
+	argos::CVector3 ArenaSize = GetSpace().GetArenaSize();
+	argos::Real arena_width = ArenaSize.GetX();
+	argos::Real arena_height = ArenaSize.GetY();
+	
+	// Arena coordinates go from -arena_width/2 to +arena_width/2 and -arena_height/2 to +arena_height/2
+	argos::Real half_width = arena_width / 2.0;
+	argos::Real half_height = arena_height / 2.0;
+	
+	// Process each location in robot memory
+	for(size_t i = 0; i < robotMemory.size(); i++) {
+		argos::CVector2 location = robotMemory[i];
+		
+		// Convert world coordinates to grid coordinates
+		// World coordinates: (-half_width, -half_height) to (+half_width, +half_height)
+		// Grid coordinates: (0, 0) to (GridWidth-1, GridHeight-1)
+		
+		// Translate from world coordinates to grid coordinates
+		argos::Real normalized_x = (location.GetY() + half_width) / arena_width;  // 0 to 1
+		argos::Real normalized_y = (location.GetX() + half_height) / arena_height; // 0 to 1
+		
+		// Convert to grid indices
+		int grid_x = static_cast<int>(normalized_x * GridWidth);
+		int grid_y = static_cast<int>(normalized_y * GridHeight);
+		
+		// Clamp to valid grid boundaries (safety check)
+		grid_x = std::max(0, std::min(grid_x, static_cast<int>(GridWidth - 1)));
+		grid_y = std::max(0, std::min(grid_y, static_cast<int>(GridHeight - 1)));
+		
+		// Increment the grid cell count
+		Grid[grid_y][grid_x]++;
+		
+		// argos::LOG << "  Location " << (i+1) << ": " << location 
+		// 		   << " -> Grid[" << grid_y << "][" << grid_x << "] = " << Grid[grid_y][grid_x] << std::endl;
+	}
+	
+	// Optional: Print updated grid section if it's small enough
+	if (GridWidth <= 10 && GridHeight <= 10) {
+		argos::LOG << "Updated grid after processing " << robotId << " memory:" << std::endl;
+		for (size_t i = 0; i < GridHeight; i++) {
+			std::string row = "";
+			for (size_t j = 0; j < GridWidth; j++) {
+				row += std::to_string(Grid[i][j]) + " ";
+			}
+			argos::LOG << row << std::endl;
+		}
+	}
+}
+
+int CPFA_loop_functions::getGridVisitCount(argos::CVector2 worldPosition) {
+	// Get arena dimensions to convert world coordinates to grid coordinates
+	argos::CVector3 ArenaSize = GetSpace().GetArenaSize();
+	argos::Real arena_width = ArenaSize.GetX();
+	argos::Real arena_height = ArenaSize.GetY();
+	
+	// Arena coordinates go from -arena_width/2 to +arena_width/2 and -arena_height/2 to +arena_height/2
+	argos::Real half_width = arena_width / 2.0;
+	argos::Real half_height = arena_height / 2.0;
+	
+	// Convert world coordinates to grid coordinates
+	// World coordinates: (-half_width, -half_height) to (+half_width, +half_height)
+	// Grid coordinates: (0, 0) to (GridWidth-1, GridHeight-1)
+	
+	// Translate from world coordinates to grid coordinates
+	argos::Real normalized_x = (worldPosition.GetY() + half_width) / arena_width;  // 0 to 1
+	argos::Real normalized_y = (worldPosition.GetX() + half_height) / arena_height; // 0 to 1
+	
+	// Convert to grid indices
+	int grid_x = static_cast<int>(normalized_x * GridWidth);
+	int grid_y = static_cast<int>(normalized_y * GridHeight);
+	
+	// Clamp to valid grid boundaries (safety check)
+	grid_x = std::max(0, std::min(grid_x, static_cast<int>(GridWidth - 1)));
+	grid_y = std::max(0, std::min(grid_y, static_cast<int>(GridHeight - 1)));
+	
+	// Return the visit count for this grid cell
+	return Grid[grid_y][grid_x];
 }
 
 REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

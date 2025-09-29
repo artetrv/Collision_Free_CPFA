@@ -66,6 +66,11 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		double getRateOfLayingPheromone();
 		double getRateOfPheromoneDecay();
 		
+		/* Grid functions */
+		void create_grid(argos::Real cell_size);
+		void receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory);
+		int getGridVisitCount(argos::CVector2 worldPosition);
+		
 	protected:
 
 		void setScore(double s);
@@ -134,11 +139,16 @@ class CPFA_loop_functions : public argos::CLoopFunctions
                 size_t currNumCollectedFood;
                 size_t Num_robots;
       
-                vector<size_t>		ForageList;
+		vector<size_t>		ForageList;
 		argos::CVector2 NestPosition;
-	private:
-
-		/* private helper functions */
+		
+		/* Grid variables */
+		std::vector<std::vector<int>> Grid;
+		argos::Real CellSize;
+		size_t GridWidth;
+		size_t GridHeight;
+		
+	private:		/* private helper functions */
 		void RandomFoodDistribution();
 		void ClusterFoodDistribution();
 		void PowerLawFoodDistribution();
