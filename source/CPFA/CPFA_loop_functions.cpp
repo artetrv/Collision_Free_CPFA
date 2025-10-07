@@ -3,6 +3,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <cstring>
+#include <iomanip>
+#include <fstream>
 
 CPFA_loop_functions::CPFA_loop_functions() :
 	RNG(argos::CRandom::CreateRNG("argos")),
@@ -36,6 +38,7 @@ CPFA_loop_functions::CPFA_loop_functions() :
 	RateOfSiteFidelity(0.0),
 	RateOfLayingPheromone(0.0),
 	RateOfPheromoneDecay(0.0),
+	SearchAlgorithmMode(1),  // Default to enhanced algorithm
 	FoodRadius(0.05),
 	FoodRadiusSquared(0.0025),
 	NestRadius(0.12),
@@ -51,8 +54,9 @@ CPFA_loop_functions::CPFA_loop_functions() :
 
 void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {	
 	
-	// Clear any existing heatmap data from previous runs
+	// Clear any existing data from previous runs
 	clearHeatmapData();
+	clearDotplotData();
  
 	argos::CDegrees USV_InDegrees;
 	argos::TConfigurationNode CPFA_node = argos::GetNode(node, "CPFA");
@@ -64,6 +68,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(CPFA_node, "RateOfSiteFidelity",                RateOfSiteFidelity);
 	argos::GetNodeAttribute(CPFA_node, "RateOfLayingPheromone",             RateOfLayingPheromone);
 	argos::GetNodeAttribute(CPFA_node, "RateOfPheromoneDecay",              RateOfPheromoneDecay);
+	// argos::GetNodeAttribute(CPFA_node, "SearchAlgorithmMode",               SearchAlgorithmMode);
 	
 	argos::GetNodeAttribute(CPFA_node, "PrintFinalScore",                   PrintFinalScore);
 
@@ -111,7 +116,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
         ArenaWidth = ArenaSize[0];
         
         // Create the grid with a default cell size of 1 meters
-        create_grid(1);
+        create_grid(1.0);
         
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
@@ -236,10 +241,26 @@ void CPFA_loop_functions::PreStep() {
         exportGridToCSV(filename);
         lastExportTime = currentTime;
     }
+    
+    // Export visited positions to CSV every 10 seconds for dot plot visualization
+    static argos::Real lastDotplotExportTime = 0.0;
+    static bool dotplotDirectoryCreated = false;
+    
+    if(currentTime - lastDotplotExportTime >= 10.0) {
+        // Create dotplot_data directory on first export
+        if(!dotplotDirectoryCreated) {
+            createDirectoryIfNotExists("dotplot_data");
+            dotplotDirectoryCreated = true;
+        }
+        
+        std::string dotplot_filename = "dotplot_data/visited_positions_" + std::to_string((int)currentTime) + ".csv";
+        exportVisitedPositionsToCSV(dotplot_filename);
+        lastDotplotExportTime = currentTime;
+    }
 }
 
 void CPFA_loop_functions::PostStep() {
-	// nothing... yet...
+	// PostStep logic can be added here if needed
 }
 
 bool CPFA_loop_functions::IsExperimentFinished() {
@@ -412,6 +433,7 @@ void CPFA_loop_functions::SetFoodDistribution() {
 void CPFA_loop_functions::RandomFoodDistribution() {
 	FoodList.clear();
         FoodColoringList.clear();
+        ClusterCenters.clear(); // No clusters in random distribution
 	argos::CVector2 placementPosition;
 
 	for(size_t i = 0; i < FoodItemCount; i++) {
@@ -429,6 +451,7 @@ void CPFA_loop_functions::RandomFoodDistribution() {
  
 void CPFA_loop_functions::ClusterFoodDistribution() {
         FoodList.clear();
+        ClusterCenters.clear();
 	argos::Real     foodOffset  = 3.0 * FoodRadius;
 	size_t          foodToPlace = NumberOfClusters * ClusterWidthX * ClusterWidthY;
 	size_t          foodPlaced = 0;
@@ -442,6 +465,9 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 		while(IsOutOfBounds(placementPosition, ClusterWidthY, ClusterWidthX)) {
 			placementPosition.Set(RNG->Uniform(ForageRangeX), RNG->Uniform(ForageRangeY));
 		}
+
+		// Store the cluster center (bottom-left corner of the cluster)
+		ClusterCenters.push_back(placementPosition);
 
 		for(size_t j = 0; j < ClusterWidthY; j++) {
 			for(size_t k = 0; k < ClusterWidthX; k++) {
@@ -474,6 +500,7 @@ void CPFA_loop_functions::ClusterFoodDistribution() {
 void CPFA_loop_functions::PowerLawFoodDistribution() {
  FoodList.clear();
     FoodColoringList.clear();
+    ClusterCenters.clear(); // Clear clusters (PowerLaw has its own cluster structure that we'd need to handle separately)
 	argos::Real foodOffset     = 3.0 * FoodRadius;
 	size_t      foodPlaced     = 0;
 	size_t      powerLawLength = 1;
@@ -655,6 +682,10 @@ double CPFA_loop_functions::getRateOfPheromoneDecay() {
 	return RateOfPheromoneDecay;
 }
 
+int CPFA_loop_functions::getSearchAlgorithmMode() {
+	return SearchAlgorithmMode;
+}
+
 argos::Real CPFA_loop_functions::getSimTimeInSeconds() {
 	int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick(); //qilu 02/06/2021
 	float sim_time = GetSpace().GetSimulationClock();
@@ -753,6 +784,13 @@ void CPFA_loop_functions::create_grid(argos::Real cell_size) {
 void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory) {
 	argos::LOG << "Receiving robot memory from " << robotId << " with " << robotMemory.size() << " locations" << std::endl;
 	
+	// Store the received memory so we could remember the exact positions the robots have visited
+	for(const auto& pos : robotMemory) {
+		VisitedPositions.push_back(pos);
+	}
+
+
+
 	// Get arena dimensions to convert world coordinates to grid coordinates
 	argos::CVector3 ArenaSize = GetSpace().GetArenaSize();
 	argos::Real arena_width = ArenaSize.GetX();
@@ -766,7 +804,7 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 	for(size_t i = 0; i < robotMemory.size(); i++) {
 		argos::CVector2 location = robotMemory[i];
 		
-		// Convert world coordinates to grid coordinates
+		// Convert world coordinates to grid coordinates for heatmap
 		// World coordinates: (-half_width, -half_height) to (+half_width, +half_height)
 		// Grid coordinates: (0, 0) to (GridWidth-1, GridHeight-1)
 		
@@ -791,16 +829,16 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 	
 	// Optional: Print updated grid section if it's small enough
 	// Print from top to bottom to match world coordinate system (higher Y values first)
-	if (GridWidth <= 10 && GridHeight <= 10) {
-		argos::LOG << "Updated grid after processing " << robotId << " memory:" << std::endl;
-		for (int i = GridHeight - 1; i >= 0; i--) {
-			std::string row = "";
-			for (size_t j = 0; j < GridWidth; j++) {
-				row += std::to_string(Grid[i][j]) + " ";
-			}
-			argos::LOG << row << std::endl;
-		}
-	}
+	// if (GridWidth <= 10 && GridHeight <= 10) {
+	// 	argos::LOG << "Updated grid after processing " << robotId << " memory:" << std::endl;
+	// 	for (int i = GridHeight - 1; i >= 0; i--) {
+	// 		std::string row = "";
+	// 		for (size_t j = 0; j < GridWidth; j++) {
+	// 			row += std::to_string(Grid[i][j]) + " ";
+	// 		}
+	// 		argos::LOG << row << std::endl;
+	// 	}
+	// }
 }
 
 int CPFA_loop_functions::getGridVisitCount(argos::CVector2 worldPosition) {
@@ -862,7 +900,43 @@ void CPFA_loop_functions::exportGridToCSV(const std::string& filename) {
 	}
 	
 	file.close();
-	argos::LOG << "Grid exported to: " << filename << std::endl;
+	// argos::LOG << "Grid exported to: " << filename << std::endl;
+}
+
+void CPFA_loop_functions::exportVisitedPositionsToCSV(const std::string& filename) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		argos::LOGERR << "Failed to open file for visited positions export: " << filename << std::endl;
+		return;
+	}
+	
+	// Write header with metadata
+	file << "# Visited Positions Export - Simulation Time: " << getSimTimeInSeconds() << " seconds" << std::endl;
+	file << "# Total Positions: " << VisitedPositions.size() << std::endl;
+	file << "# Food Distribution: " << FoodDistribution << std::endl;
+	file << "# Number of Clusters: " << ClusterCenters.size() << std::endl;
+	file << "# Cluster Dimensions: " << ClusterWidthX << "x" << ClusterWidthY << std::endl;
+	file << "# Food Radius: " << FoodRadius << std::endl;
+	file << "# Format: X,Y (coordinates in meters)" << std::endl;
+	
+	// Write cluster information if available
+	if (!ClusterCenters.empty()) {
+		file << "# Cluster Centers (bottom-left corners):" << std::endl;
+		for(size_t i = 0; i < ClusterCenters.size(); i++) {
+			file << "# Cluster " << i << ": " << ClusterCenters[i].GetX() << "," << ClusterCenters[i].GetY() << std::endl;
+		}
+	}
+	
+	file << "# === VISITED POSITIONS DATA ===" << std::endl;
+	file << "X,Y" << std::endl;
+	
+	// Write all visited positions
+	for(const auto& pos : VisitedPositions) {
+		file << pos.GetX() << "," << pos.GetY() << std::endl;
+	}
+	
+	file.close();
+	// argos::LOG << "Visited positions exported to: " << filename << " (" << VisitedPositions.size() << " positions, " << ClusterCenters.size() << " clusters)" << std::endl;
 }
 
 bool CPFA_loop_functions::createDirectoryIfNotExists(const std::string& dirPath) {
@@ -930,6 +1004,54 @@ void CPFA_loop_functions::clearHeatmapData() {
 		argos::LOG << "Cleared heatmap data: deleted " << filesDeleted << " CSV files" << std::endl;
 	} else {
 		argos::LOG << "Heatmap data directory is already clean" << std::endl;
+	}
+}
+
+void CPFA_loop_functions::clearDotplotData() {
+	const std::string dotplotDir = "dotplot_data";
+	
+	// Check if directory exists
+	struct stat info;
+	if (stat(dotplotDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+		// Directory doesn't exist, nothing to clear
+		return;
+	}
+	
+	// Open directory
+	DIR* dir = opendir(dotplotDir.c_str());
+	if (dir == nullptr) {
+		argos::LOGERR << "Failed to open dotplot_data directory for cleaning" << std::endl;
+		return;
+	}
+	
+	// Read directory entries and delete CSV files
+	struct dirent* entry;
+	int filesDeleted = 0;
+	
+	while ((entry = readdir(dir)) != nullptr) {
+		// Skip . and .. entries
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+			continue;
+		}
+		
+		// Check if it's a CSV file
+		std::string filename = entry->d_name;
+		if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".csv") {
+			std::string fullPath = dotplotDir + "/" + filename;
+			if (remove(fullPath.c_str()) == 0) {
+				filesDeleted++;
+			} else {
+				argos::LOGERR << "Failed to delete: " << fullPath << std::endl;
+			}
+		}
+	}
+	
+	closedir(dir);
+	
+	if (filesDeleted > 0) {
+		argos::LOG << "Cleared dotplot data: deleted " << filesDeleted << " CSV files" << std::endl;
+	} else {
+		argos::LOG << "Dotplot data directory is already clean" << std::endl;
 	}
 }
 

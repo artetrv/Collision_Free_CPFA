@@ -78,6 +78,7 @@ class CPFA_controller : public BaseController {
 		
 		/* Grid-based search parameters */
 		int VisitCountThreshold; // Threshold for avoiding frequently visited areas
+		int SearchAlgorithmMode; // 0 = baseline, 1 = enhanced
   
   size_t           searchingTime; //qilu 09/26
   size_t           travelingTime;//qilu 09/26

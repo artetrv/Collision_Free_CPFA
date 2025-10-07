@@ -23,8 +23,8 @@ class LiveHeatmapViewer:
         self.last_file = None
         self.grid_data = None
         
-        # Create custom colormap (blue to red)
-        colors = ['darkblue', 'blue', 'lightblue', 'white', 'yellow', 'orange', 'red', 'darkred']
+        # Create custom colormap (white to dark red)
+        colors = ['white', 'lightcoral', 'red', 'darkred', 'maroon']
         self.cmap = LinearSegmentedColormap.from_list('visit_count', colors)
         
         # Setup the plot
@@ -94,9 +94,18 @@ class LiveHeatmapViewer:
                 # Clear the axes
                 self.ax.clear()
                 
-                # Create the heatmap
+                # Get grid dimensions
+                height, width = grid_data.shape
+                
+                # For 8x8 arena: world extends from -4 to +4, grid lines at integers
+                # Cell centers are at half-integers: -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5
+                arena_half_size = width // 2  # 4 for 8x8 grid
+                
+                # Create the heatmap with extent from -4 to +4
                 self.im = self.ax.imshow(grid_data, cmap=self.cmap, 
-                                       interpolation='nearest', origin='lower')
+                                       interpolation='nearest', origin='lower',
+                                       extent=[-arena_half_size, arena_half_size,
+                                              -arena_half_size, arena_half_size])
                 
                 # Add colorbar if not already present
                 if not hasattr(self, 'cbar'):
@@ -113,11 +122,39 @@ class LiveHeatmapViewer:
                 self.ax.set_title(f'Robot Visit Count Heatmap\n'
                                 f'Time: {sim_time}s | Grid: {dimensions} | Cell: {cell_size}m', 
                                 fontsize=14)
-                self.ax.set_xlabel('Grid X Coordinate', fontsize=12)
-                self.ax.set_ylabel('Grid Y Coordinate', fontsize=12)
+                self.ax.set_xlabel('World X Coordinate (meters)', fontsize=12)
+                self.ax.set_ylabel('World Y Coordinate (meters)', fontsize=12)
                 
-                # Add grid lines for better visualization
-                self.ax.grid(True, alpha=0.3)
+                # Grid lines at integer positions: -4, -3, -2, -1, 0, 1, 2, 3, 4
+                grid_lines = np.arange(-arena_half_size, arena_half_size + 1, 1)
+                
+                # Draw grid lines
+                # for x in grid_lines:
+                #     self.ax.axvline(x, color='gray', alpha=0.3, linewidth=0.5)
+                # for y in grid_lines:
+                #     self.ax.axhline(y, color='gray', alpha=0.3, linewidth=0.5)
+                
+                # Set ticks at grid line positions
+                self.ax.set_xticks(grid_lines)
+                self.ax.set_yticks(grid_lines)
+                
+                # Add visit count text inside each cell
+                for i in range(height):
+                    for j in range(width):
+                        visit_count = int(grid_data[i, j])
+                        # Calculate world coordinates for cell centers
+                        # The extent goes from -arena_half_size to +arena_half_size
+                        # Cell centers should be at the middle of each cell
+                        x_pos = -arena_half_size + (j + 0.5) * (2 * arena_half_size / width)  # Cell center X
+                        y_pos = -arena_half_size + (i + 0.5) * (2 * arena_half_size / height)  # Cell center Y
+                        
+                        # Choose text color based on visit count for better visibility
+                        text_color = 'white' if visit_count > np.max(grid_data) * 0.5 else 'black'
+                        
+                        self.ax.text(x_pos, y_pos, str(visit_count), 
+                                   ha='center', va='center', 
+                                   fontsize=10, fontweight='bold',
+                                   color=text_color)
                 
                 # Add text annotation with statistics
                 max_visits = np.max(grid_data)

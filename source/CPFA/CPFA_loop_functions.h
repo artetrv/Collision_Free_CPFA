@@ -65,15 +65,19 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		double getRateOfSiteFidelity();
 		double getRateOfLayingPheromone();
 		double getRateOfPheromoneDecay();
+		int getSearchAlgorithmMode();
 		
 		/* Grid functions */
 		void create_grid(argos::Real cell_size);
 		void receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory);
 		int getGridVisitCount(argos::CVector2 worldPosition);
 		void exportGridToCSV(const std::string& filename);
+		void exportVisitedPositionsToCSV(const std::string& filename);
 		bool createDirectoryIfNotExists(const std::string& dirPath);
 		void clearHeatmapData();
-		
+		void clearDotplotData();
+		std::vector<argos::CVector2> VisitedPositions;
+		std::vector<argos::CVector2> ClusterCenters;
 	protected:
 
 		void setScore(double s);
@@ -111,6 +115,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		argos::Real RateOfSiteFidelity;
 		argos::Real RateOfLayingPheromone;
 		argos::Real RateOfPheromoneDecay;
+		int SearchAlgorithmMode;  // 0 = baseline, 1 = enhanced
 		
 		/* physical robot & world variables */
 		argos::Real FoodRadius;
