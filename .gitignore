@@ -6,5 +6,5 @@ launch
 **/CMakeLists.txt.user*
 *.swp
 logs
-
+heatmap_data/
 .catkin_tools

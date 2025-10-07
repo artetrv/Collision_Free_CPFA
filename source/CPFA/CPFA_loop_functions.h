@@ -70,6 +70,9 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		void create_grid(argos::Real cell_size);
 		void receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory);
 		int getGridVisitCount(argos::CVector2 worldPosition);
+		void exportGridToCSV(const std::string& filename);
+		bool createDirectoryIfNotExists(const std::string& dirPath);
+		void clearHeatmapData();
 		
 	protected:
 

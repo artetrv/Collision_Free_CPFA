@@ -1,4 +1,8 @@
 #include "CPFA_loop_functions.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <cstring>
 
 CPFA_loop_functions::CPFA_loop_functions() :
 	RNG(argos::CRandom::CreateRNG("argos")),
@@ -46,6 +50,9 @@ CPFA_loop_functions::CPFA_loop_functions() :
 {}
 
 void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {	
+	
+	// Clear any existing heatmap data from previous runs
+	clearHeatmapData();
  
 	argos::CDegrees USV_InDegrees;
 	argos::TConfigurationNode CPFA_node = argos::GetNode(node, "CPFA");
@@ -211,6 +218,23 @@ void CPFA_loop_functions::PreStep() {
 	PheromoneList.clear();
         TargetRayList.clear();
         Trajectory.clear();
+    }
+    
+    // Export grid to CSV every 10 seconds for visualization
+    static argos::Real lastExportTime = 0.0;
+    static bool directoryCreated = false;
+    argos::Real currentTime = getSimTimeInSeconds();
+    
+    if(currentTime - lastExportTime >= 10.0) {
+        // Create heatmap_data directory on first export
+        if(!directoryCreated) {
+            createDirectoryIfNotExists("heatmap_data");
+            directoryCreated = true;
+        }
+        
+        std::string filename = "heatmap_data/grid_heatmap_" + std::to_string((int)currentTime) + ".csv";
+        exportGridToCSV(filename);
+        lastExportTime = currentTime;
     }
 }
 
@@ -696,8 +720,9 @@ void CPFA_loop_functions::create_grid(argos::Real cell_size) {
 	argos::LOG << "Grid visualization (all cells initialized to 0):" << std::endl;
 	
 	// If grid is small enough, print the entire grid
+	// Print from top to bottom to match world coordinate system (higher Y values first)
 	if (GridWidth <= 20 && GridHeight <= 20) {
-		for (size_t i = 0; i < GridHeight; i++) {
+		for (int i = GridHeight - 1; i >= 0; i--) {
 			std::string row = "";
 			for (size_t j = 0; j < GridWidth; j++) {
 				row += std::to_string(Grid[i][j]) + " ";
@@ -705,12 +730,13 @@ void CPFA_loop_functions::create_grid(argos::Real cell_size) {
 			argos::LOG << row << std::endl;
 		}
 	} else {
-		// For larger grids, just show the first few rows and columns
-		argos::LOG << "Grid is large (" << GridWidth << "x" << GridHeight << "), showing first 10x10 section:" << std::endl;
+		// For larger grids, show top 10x10 section (from higher Y values down)
+		argos::LOG << "Grid is large (" << GridWidth << "x" << GridHeight << "), showing top 10x10 section:" << std::endl;
 		size_t max_rows = std::min(GridHeight, static_cast<size_t>(10));
 		size_t max_cols = std::min(GridWidth, static_cast<size_t>(10));
 		
-		for (size_t i = 0; i < max_rows; i++) {
+		// Start from the top rows (higher Y values) and work down
+		for (int i = GridHeight - 1; i >= static_cast<int>(GridHeight - max_rows); i--) {
 			std::string row = "";
 			for (size_t j = 0; j < max_cols; j++) {
 				row += std::to_string(Grid[i][j]) + " ";
@@ -745,8 +771,8 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 		// Grid coordinates: (0, 0) to (GridWidth-1, GridHeight-1)
 		
 		// Translate from world coordinates to grid coordinates
-		argos::Real normalized_x = (location.GetY() + half_width) / arena_width;  // 0 to 1
-		argos::Real normalized_y = (location.GetX() + half_height) / arena_height; // 0 to 1
+		argos::Real normalized_x = (location.GetX() + half_width) / arena_width;  // 0 to 1
+		argos::Real normalized_y = (location.GetY() + half_height) / arena_height; // 0 to 1
 		
 		// Convert to grid indices
 		int grid_x = static_cast<int>(normalized_x * GridWidth);
@@ -764,9 +790,10 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 	}
 	
 	// Optional: Print updated grid section if it's small enough
+	// Print from top to bottom to match world coordinate system (higher Y values first)
 	if (GridWidth <= 10 && GridHeight <= 10) {
 		argos::LOG << "Updated grid after processing " << robotId << " memory:" << std::endl;
-		for (size_t i = 0; i < GridHeight; i++) {
+		for (int i = GridHeight - 1; i >= 0; i--) {
 			std::string row = "";
 			for (size_t j = 0; j < GridWidth; j++) {
 				row += std::to_string(Grid[i][j]) + " ";
@@ -791,8 +818,8 @@ int CPFA_loop_functions::getGridVisitCount(argos::CVector2 worldPosition) {
 	// Grid coordinates: (0, 0) to (GridWidth-1, GridHeight-1)
 	
 	// Translate from world coordinates to grid coordinates
-	argos::Real normalized_x = (worldPosition.GetY() + half_width) / arena_width;  // 0 to 1
-	argos::Real normalized_y = (worldPosition.GetX() + half_height) / arena_height; // 0 to 1
+	argos::Real normalized_x = (worldPosition.GetX() + half_width) / arena_width;  // 0 to 1
+	argos::Real normalized_y = (worldPosition.GetY() + half_height) / arena_height; // 0 to 1
 	
 	// Convert to grid indices
 	int grid_x = static_cast<int>(normalized_x * GridWidth);
@@ -804,6 +831,106 @@ int CPFA_loop_functions::getGridVisitCount(argos::CVector2 worldPosition) {
 	
 	// Return the visit count for this grid cell
 	return Grid[grid_y][grid_x];
+}
+
+void CPFA_loop_functions::exportGridToCSV(const std::string& filename) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		argos::LOGERR << "Failed to open file for grid export: " << filename << std::endl;
+		return;
+	}
+	
+	// Write header with metadata
+	file << "# Grid Export - Simulation Time: " << getSimTimeInSeconds() << " seconds" << std::endl;
+	file << "# Grid Dimensions: " << GridWidth << "x" << GridHeight << std::endl;
+	file << "# Cell Size: " << CellSize << " meters" << std::endl;
+	
+	// Write column headers (grid x coordinates)
+	file << "y\\x";
+	for (size_t j = 0; j < GridWidth; j++) {
+		file << "," << j;
+	}
+	file << std::endl;
+	
+	// Write grid data with row headers (grid y coordinates)
+	for (size_t i = 0; i < GridHeight; i++) {
+		file << i; // Row header
+		for (size_t j = 0; j < GridWidth; j++) {
+			file << "," << Grid[i][j];
+		}
+		file << std::endl;
+	}
+	
+	file.close();
+	argos::LOG << "Grid exported to: " << filename << std::endl;
+}
+
+bool CPFA_loop_functions::createDirectoryIfNotExists(const std::string& dirPath) {
+	struct stat info;
+	
+	// Check if directory already exists
+	if (stat(dirPath.c_str(), &info) == 0) {
+		if (info.st_mode & S_IFDIR) {
+			return true; // Directory exists
+		}
+	}
+	
+	// Try to create directory
+	if (mkdir(dirPath.c_str(), 0755) == 0) {
+		argos::LOG << "Created directory: " << dirPath << std::endl;
+		return true;
+	} else {
+		argos::LOGERR << "Failed to create directory: " << dirPath << std::endl;
+		return false;
+	}
+}
+
+void CPFA_loop_functions::clearHeatmapData() {
+	const std::string heatmapDir = "heatmap_data";
+	
+	// Check if directory exists
+	struct stat info;
+	if (stat(heatmapDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+		// Directory doesn't exist, nothing to clear
+		return;
+	}
+	
+	// Open directory
+	DIR* dir = opendir(heatmapDir.c_str());
+	if (dir == nullptr) {
+		argos::LOGERR << "Failed to open heatmap_data directory for cleaning" << std::endl;
+		return;
+	}
+	
+	// Read directory entries and delete CSV files
+	struct dirent* entry;
+	int filesDeleted = 0;
+	
+	while ((entry = readdir(dir)) != nullptr) {
+		// Skip . and .. entries
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+			continue;
+		}
+		
+		// Check if it's a CSV file
+		std::string filename = entry->d_name;
+		if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".csv") {
+			std::string fullPath = heatmapDir + "/" + filename;
+			if (remove(fullPath.c_str()) == 0) {
+				filesDeleted++;
+			} else {
+				argos::LOGERR << "Failed to delete: " << fullPath << std::endl;
+			}
+		}
+	}
+	
+	closedir(dir);
+	
+	if (filesDeleted > 0) {
+		argos::LOG << "Cleared heatmap data: deleted " << filesDeleted << " CSV files" << std::endl;
+	} else {
+		argos::LOG << "Heatmap data directory is already clean" << std::endl;
+	}
 }
 
 REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")
