@@ -21,7 +21,21 @@ CPFA_controller::CPFA_controller() :
     m_pcLEDs(NULL),
     TrailColor(CColor::BLUE),
         updateFidelity(false),
-        last_time_in_seconds(0)
+        last_time_in_seconds(0),
+		// ---- NEW defaults
+    s_WindowSize(100),
+    sw_sample_pos(4),   // sample every TPS/4 ticks (~0.25s at 32 TPS)
+    sw_waitTicks(1),
+    sw_CongRatioOn(1.6),
+    sw_CongRatioOff(1.3),
+    sw_bad_samples(4),
+    sw_good_samples(4),
+    sw_congEps(0.02),
+   sum_window_segments(0.0),
+    sw_LastCongSampleTick(0),
+    sw_badSample_counter(0),
+    sw_goodSample_counter(0),
+    InCongested(false)
 {
 }
 
@@ -42,6 +56,21 @@ void CPFA_controller::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings, "ResultsDirectoryPath",      results_path);
 	argos::GetNodeAttribute(settings, "DestinationNoiseStdev",      DestinationNoiseStdev);
 	argos::GetNodeAttribute(settings, "PositionNoiseStdev",      PositionNoiseStdev);
+
+	// --- NEW: congestion params (keeps defaults if absent)
+	argos::GetNodeAttributeOrDefault(settings, "CongWindowSize",    s_WindowSize,    s_WindowSize);
+	argos::GetNodeAttributeOrDefault(settings, "CongSampleDivisor", sw_sample_pos, sw_sample_pos);
+	argos::GetNodeAttributeOrDefault(settings, "CongRatioOn",      sw_CongRatioOn,       sw_CongRatioOn);
+	argos::GetNodeAttributeOrDefault(settings, "CongRatioOff",      sw_CongRatioOff,      sw_CongRatioOff);
+	argos::GetNodeAttributeOrDefault(settings, "CongHOn",           sw_bad_samples,         sw_bad_samples);
+	argos::GetNodeAttributeOrDefault(settings, "CongHOff",          sw_good_samples,          sw_good_samples);
+	argos::GetNodeAttributeOrDefault(settings, "CongEps",           sw_congEps,           sw_congEps);
+
+	// Derived cadence (ticks)
+	unsigned tps = SimulationTicksPerSecond();
+	sw_waitTicks = std::max<size_t>(1, tps / std::max<size_t>(1, sw_sample_pos));
+	sw_LastCongSampleTick = SimulationTick(); // start gate from "now"
+
 
 	argos::CVector2 p(GetPosition());
 	SetStartPosition(argos::CVector3(p.GetX(), p.GetY(), 0.0));
@@ -98,22 +127,22 @@ void CPFA_controller::ControlStep() {
 	// Add line so we can draw the trail
 	curr_time_in_seconds = (argos::Real)(SimulationTick() / SimulationTicksPerSecond()); 
      
-	if(curr_time_in_seconds - last_time_in_seconds >= 0)
-	{
-		CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
+	// if(curr_time_in_seconds - last_time_in_seconds >= 0)
+	// {
+	// 	CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
 		
-		CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
-		CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
-		CRay3 targetRay(target3d, position3d);
-		myTrail.push_back(targetRay);
-		LoopFunctions->Trajectory[controllerID].push_back(position2d);
-		//since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
-		LoopFunctions->TargetRayList.push_back(targetRay);
-		LoopFunctions->TargetRayColorList.push_back(TrailColor);
-		//argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
-		previous_position = GetPosition();
-		last_time_in_seconds = curr_time_in_seconds;
-     }
+	// 	CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
+	// 	CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
+	// 	CRay3 targetRay(target3d, position3d);
+	// 	myTrail.push_back(targetRay);
+	// 	LoopFunctions->Trajectory[controllerID].push_back(position2d);
+	// 	//since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
+	// 	LoopFunctions->TargetRayList.push_back(targetRay);
+	// 	LoopFunctions->TargetRayColorList.push_back(TrailColor);
+	// 	//argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
+	// 	previous_position = GetPosition();
+	// 	last_time_in_seconds = curr_time_in_seconds;
+    //  }
 	//UpdateTargetRayList();
 	CPFA();
 	Move();
@@ -145,6 +174,9 @@ void CPFA_controller::Reset() {
 	isHoldingFood = false;
 	isUsingSiteFidelity = false;
 	isGivingUpSearch = false;
+
+	Cong_ResetWindow();
+	InCongested = false;
 }
 
 bool CPFA_controller::IsHoldingFood() {
@@ -183,6 +215,10 @@ void CPFA_controller::CPFA() {
 			//SetIsHeadingToNest(false);
 			Surveying();
 			break;
+		
+		case CONGESTED:
+    		Congested();
+    		break;
 	}
 }
 
@@ -262,6 +298,106 @@ void CPFA_controller::SetLoopFunctions(CPFA_loop_functions* lf) {
 	}
 
 }
+//just detection for now
+void CPFA_controller::Congested() {
+     Returning();
+}
+//resets all congestion track history for the next cycle
+void CPFA_controller::Cong_ResetWindow() {
+    sw_positions.clear();
+    sum_window_segments = 0.0;
+    sw_LastCongSampleTick = SimulationTick();
+    sw_badSample_counter = sw_goodSample_counter = 0;
+}
+//starts when enough samples are collected
+bool CPFA_controller::Cong_WindowFull() const {
+    return sw_positions.size() >= s_WindowSize;
+}
+//computes tortuosity
+argos::Real CPFA_controller::Cong_CurrentTortuosity() const {
+    if (sw_positions.size() < 2) return 1.0;
+    const argos::CVector2& a = sw_positions.front();
+    const argos::CVector2& b = sw_positions.back();
+    argos::Real euclid = (b - a).Length(); //euclidean distance
+    if (euclid < sw_congEps) return 1.0;  // avoids errors when robots barely moved
+    return sum_window_segments / euclid;
+}
+//mark that the robot is congested
+void CPFA_controller::Cong_Enter() {
+    InCongested = true;
+    sw_goodSample_counter = 0;
+    LOG << "[CPFA] " << GetId() << " is CONGESTED (t= " 
+        << (argos::Real)SimulationTick() / (argos::Real)SimulationTicksPerSecond() << "s)\n";
+}
+//marks that the robot is not congested
+void CPFA_controller::Cong_Exit() {
+    InCongested = false;
+    sw_badSample_counter = 0;
+    LOG << "[CPFA] " << GetId() << " exit CONGESTED (clear at t=" 
+        << (argos::Real)SimulationTick() / (argos::Real)SimulationTicksPerSecond() << "s)\n";
+}
+//samples position on a cadence, maintains window, compute tortuosity, updates hysteresis and trigger enter/exit
+void CPFA_controller::Cong_TrySampleAndUpdate() {
+    // Only track while returning (or already congested) AND carrying food
+    if (CPFA_state != RETURNING && CPFA_state != CONGESTED) return;
+    if (!isHoldingFood) return;
+	//sample at a fixed rate
+    const size_t now = SimulationTick();
+    if (now - sw_LastCongSampleTick < sw_waitTicks) return; // cadence gate
+    sw_LastCongSampleTick = now;
+
+    // Sample current 2D position
+    argos::CVector2 cur(GetPosition().GetX(), GetPosition().GetY());
+
+    if (!sw_positions.empty()) {
+        sum_window_segments += (cur - sw_positions.back()).Length();
+    }
+    sw_positions.push_back(cur);
+
+    // Maintain sliding window
+    if (sw_positions.size() > s_WindowSize) {
+        const argos::CVector2 old0 = sw_positions.front();
+        sw_positions.pop_front();
+        const argos::CVector2 new0 = sw_positions.front();
+        sum_window_segments -= (new0 - old0).Length();
+        if (sum_window_segments < 0) sum_window_segments = 0; // numeric guard
+    }
+	//until window is full
+    if (!Cong_WindowFull()) return;
+	//until enough samples
+    const argos::Real tau = Cong_CurrentTortuosity();
+
+    // Hysteresis counters
+    if (tau >= sw_CongRatioOn) { //bad
+        ++sw_badSample_counter;
+        sw_goodSample_counter = 0;
+    } else if (tau <= sw_CongRatioOff) { //good
+        ++sw_goodSample_counter;
+        sw_badSample_counter = 0;
+    } else {
+        //Between thresholds, neutral
+        sw_badSample_counter = 0;
+        sw_goodSample_counter = 0;
+    }
+
+    // Transitions
+    if (!InCongested && sw_badSample_counter >= sw_bad_samples) {
+        CPFA_state = CONGESTED;
+        Cong_Enter();
+        return;
+    }
+
+    if (InCongested && sw_goodSample_counter >= sw_good_samples) {
+        Cong_Exit();
+        CPFA_state = RETURNING;   // go back to normal return
+        // Optional: reset window to avoid immediate retrigger
+        Cong_ResetWindow();
+        return;
+    }
+}
+
+
+
 
 void CPFA_controller::Departing()
 {
@@ -491,7 +627,7 @@ void CPFA_controller::Surveying() {
 void CPFA_controller::Returning() {
  //LOG<<"Returning..."<<endl;
 	//SetHoldingFood();
-
+	Cong_TrySampleAndUpdate();
 	// Are we there yet? (To the nest, that is.)
 	if(IsInTheNest()) {
 		// Based on a Poisson CDF, the robot may or may not create a pheromone
@@ -558,6 +694,13 @@ void CPFA_controller::Returning() {
         isHoldingFood = false; 
         travelingTime+=SimulationTick()-startTime;//qilu 10/22
         startTime = SimulationTick();//qilu 10/22
+
+        // --- CONGESTION: end-of-return cleanup ---
+        Cong_ResetWindow();
+        InCongested = false;
+        sw_badSample_counter = sw_goodSample_counter = 0;
+        // ----------------------------------------
+
                 
     } // end of In the nest
 	// Take a small step towards the nest so we don't overshoot by too much if we miss it

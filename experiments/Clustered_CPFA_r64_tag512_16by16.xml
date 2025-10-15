@@ -5,7 +5,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0"/>
-    <experiment length="6000" random_seed="0" ticks_per_second="32"/>
+    <experiment length="6000" random_seed="891799" ticks_per_second="32"/>
   </framework>
 
   <!-- *************** -->
@@ -51,39 +51,37 @@
         RateOfSiteFidelity="1.376331398" 
         UninformedSearchVariation="3.67372660634"/>
 
-         <settings ClusterWidthX="8" ClusterWidthY="8" DrawDensityRate="4" DrawIDs="1" 
-         DrawTargetRays="0" DrawTrails="0" FoodDistribution="1" FoodItemCount="256" FoodRadius="0.05" MaxSimCounter="1" 
-         MaxSimTimeInSeconds="1800" NestElevation="0.001" NestPosition="0.0, 0.0"
-
-NestRadius="0.10" NumberOfClusters="8" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" VaryCapacityFlag = "0" 
-VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
+         <settings CongWindowSize="100" CongSampleDivisor="4" CongRatioOn="1.6" CongRatioOff="1.3" CongHOn="4" CongHOff="4" CongEps="0.02"
+         ClusterWidthX="3" ClusterWidthY="3" DrawDensityRate="4" DrawIDs="1" DrawTargetRays="0" DrawTrails="0" FoodDistribution="1" FoodItemCount="45" FoodRadius="0.05" MaxSimCounter="1" 
+         MaxSimTimeInSeconds="1800" NestElevation="0.001" NestPosition="0.0, 0.0" NestRadius="0.10" NumberOfClusters="5" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" 
+         VaryCapacityFlag = "0" VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 
   </loop_functions>
 
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
-  <arena center="0,0,0.5" size="16.0, 16.0, 1">
+  <arena center="0,0,0.5" size="6.0, 6.0, 1">
 
-    <floor id="floor" pixels_per_meter="10" source="loop_functions"/>
+    <floor id="floor" pixels_per_meter="20" source="loop_functions"/>
     
     <!-- Place four boxes in a square to delimit the arena -->
-    <box id="wall_north1" movable="false" size="16,0.02,0.5">
-      <body orientation="0,0,0" position="0,8,0"/>
+    <box id="wall_north1" movable="false" size="6,0.02,0.5">
+      <body orientation="0,0,0" position="0,3,0"/>
     </box> 
     
     
-    <box id="wall_south" movable="false" size="16,0.02,0.5">
-      <body orientation="0,0,0" position="0,-8,0"/>
+    <box id="wall_south" movable="false" size="6,0.02,0.5">
+      <body orientation="0,0,0" position="0,-3,0"/>
     </box>
     
-    <box id="wall_east" movable="false" size="0.02, 16,0.5">
-      <body orientation="0,0,0" position="8,0,0"/>
+    <box id="wall_east" movable="false" size="0.02, 6,0.5">
+      <body orientation="0,0,0" position="3,0,0"/>
     </box>
     
     
-    <box id="wall_west" movable="false" size="0.02, 16,0.5">
-      <body orientation="0,0,0" position="-8,0,0"/>
+    <box id="wall_west" movable="false" size="0.02, 6,0.5">
+      <body orientation="0,0,0" position="-3,0,0"/>
     </box>
     
     
@@ -91,7 +89,7 @@ VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 <distribute>
 <position max="3.0, 3.0, 0.0" method="uniform" min="-3.0, -3.0, 0.0"/>
 <orientation mean="0, 0, 0" method="gaussian" std_dev="360, 0, 0"/>
-<entity max_trials="100" quantity="64">
+<entity max_trials="100" quantity="10">
 <foot-bot id="F0-"><controller config="CPFA"/></foot-bot>
 </entity>
 </distribute>
@@ -118,7 +116,9 @@ VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 
 <qt-opengl>
       <camera>
-        <placement idx="0" position="0,0,4.34" look_at="0,0,0" up="1,0,0" lens_focal_length="20"/>
+      <placements>
+        <placement index="0" position="0,0,10" look_at="0,0,0" up="1,0,0" lens_focal_length="35"/>
+      </placements>
       </camera>
       <user_functions label="CPFA_qt_user_functions"/>
     </qt-opengl>
