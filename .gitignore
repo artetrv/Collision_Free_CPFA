@@ -9,3 +9,5 @@ logs
 heatmap_data/
 dotplot_data/
 .catkin_tools
+food_data/
+trajectory_data/

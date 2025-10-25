@@ -209,12 +209,12 @@ class LiveDotplotViewer:
                     self.ax.set_aspect('equal')
                     self.ax.grid(True, alpha=0.3)
                     
-                    # Set axis limits to match arena size (8x8 arena = -4 to +4)
-                    arena_half_size = 4.0
+                    # Set axis limits to match arena size (10x10 arena = -5 to +5)
+                    arena_half_size = 4
                     self.ax.set_xlim(-arena_half_size, arena_half_size)
                     self.ax.set_ylim(-arena_half_size, arena_half_size)
                     
-                    # Add grid lines at integer positions for both X and Y axes
+                    # Add grid lines at 1 meter intervals for 10x10 arena
                     grid_positions = np.arange(-arena_half_size, arena_half_size + 1, 1)
                     self.ax.set_xticks(grid_positions)
                     self.ax.set_yticks(grid_positions)

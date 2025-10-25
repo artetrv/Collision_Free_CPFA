@@ -97,11 +97,11 @@ class LiveHeatmapViewer:
                 # Get grid dimensions
                 height, width = grid_data.shape
                 
-                # For 8x8 arena: world extends from -4 to +4, grid lines at integers
-                # Cell centers are at half-integers: -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5
-                arena_half_size = width // 2  # 4 for 8x8 grid
+                # For 10x10 arena: world extends from -5 to +5, grid lines at 1m intervals
+                # Grid cells cover the entire arena regardless of grid resolution
+                arena_half_size = 4  # Half of 10x10 arena
                 
-                # Create the heatmap with extent from -4 to +4
+                # Create the heatmap with extent from -5 to +5
                 self.im = self.ax.imshow(grid_data, cmap=self.cmap, 
                                        interpolation='nearest', origin='lower',
                                        extent=[-arena_half_size, arena_half_size,
@@ -125,7 +125,7 @@ class LiveHeatmapViewer:
                 self.ax.set_xlabel('World X Coordinate (meters)', fontsize=12)
                 self.ax.set_ylabel('World Y Coordinate (meters)', fontsize=12)
                 
-                # Grid lines at integer positions: -4, -3, -2, -1, 0, 1, 2, 3, 4
+                # Grid lines at 1m intervals: -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5
                 grid_lines = np.arange(-arena_half_size, arena_half_size + 1, 1)
                 
                 # Draw grid lines
