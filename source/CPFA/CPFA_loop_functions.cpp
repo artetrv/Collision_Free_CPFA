@@ -58,6 +58,8 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	// Clear any existing data from previous runs
 	clearHeatmapData();
 	clearDotplotData();
+	clearTrajectoryData();
+	clearFoodData();
  
 	argos::CDegrees USV_InDegrees;
 	argos::TConfigurationNode CPFA_node = argos::GetNode(node, "CPFA");
@@ -117,7 +119,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
         ArenaWidth = ArenaSize[0];
         
         // Create the grid with a default cell size of 1 meters
-        create_grid(1.0);
+        create_grid(0.25);
         
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
@@ -258,6 +260,22 @@ void CPFA_loop_functions::PreStep() {
         exportVisitedPositionsToCSV(dotplot_filename);
         lastDotplotExportTime = currentTime;
     }
+    
+    // Export food locations to CSV every 10 seconds for food visualization
+    static argos::Real lastFoodExportTime = 0.0;
+    static bool foodDirectoryCreated = false;
+    
+    if(currentTime - lastFoodExportTime >= 10.0) {
+        // Create food_data directory on first export
+        if(!foodDirectoryCreated) {
+            createDirectoryIfNotExists("food_data");
+            foodDirectoryCreated = true;
+        }
+        
+        std::string food_filename = "food_data/food_locations_" + std::to_string((int)currentTime) + ".csv";
+        exportFoodLocationsToCSV(food_filename);
+        lastFoodExportTime = currentTime;
+    }
 }
 
 void CPFA_loop_functions::PostStep() {
@@ -267,13 +285,16 @@ void CPFA_loop_functions::PostStep() {
 bool CPFA_loop_functions::IsExperimentFinished() {
 	bool isFinished = false;
 
-	if(FoodList.size() == 0 || GetSpace().GetSimulationClock() >= MaxSimTime) {
+	if(FoodList.size() == 0) {
 		isFinished = true;
 	}
+	// else if(GetSpace().GetSimulationClock() >= MaxSimTime) {
+	// 	isFinished = true;
+	// }
     //set to collected 88% food and then stop
-    if(score >= NumDistributedFood){
-		isFinished = true;
-		}
+    // if(score >= NumDistributedFood){
+	// 	isFinished = true;
+	// }
          
          
     
@@ -294,98 +315,109 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 
 void CPFA_loop_functions::PostExperiment() {
 	  
+     // Calculate cells visited metric
+     size_t cellsVisited = 0;
+     for(size_t i = 0; i < GridHeight; i++) {
+         for(size_t j = 0; j < GridWidth; j++) {
+             if(Grid[i][j] > 0) {
+                 cellsVisited++;
+             }
+         }
+     }
+     size_t totalCells = GridWidth * GridHeight;
+	  
      printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
-     printf("Total rejected random search locations: %lu\n", RejectedLocationCounter);
+     printf("Total cells visited: %lu / %lu\n", cellsVisited, totalCells);
        
                   
-    if (PrintFinalScore == 1) {
-        string type="";
-        if (FoodDistribution == 0) type = "random";
-        else if (FoodDistribution == 1) type = "cluster";
-        else type = "powerlaw";
+    // if (PrintFinalScore == 1) {
+    //     string type="";
+    //     if (FoodDistribution == 0) type = "random";
+    //     else if (FoodDistribution == 1) type = "cluster";
+    //     else type = "powerlaw";
             
-        ostringstream num_tag;
-        num_tag << FoodItemCount; 
+    //     ostringstream num_tag;
+    //     num_tag << FoodItemCount; 
               
-        ostringstream num_robots;
-        num_robots <<  Num_robots;
+    //     ostringstream num_robots;
+    //     num_robots <<  Num_robots;
    
-        ostringstream arena_width;
-        arena_width << ArenaWidth;
+    //     ostringstream arena_width;
+    //     arena_width << ArenaWidth;
         
-        ostringstream quardArena;
-        if(abs(NestPosition.GetX())>=1){ //the central nest is not in the center, this is a quard arena
-             quardArena << 1;
-         }
-         else{
-             quardArena << 0;
-        }
+    //     ostringstream quardArena;
+    //     if(abs(NestPosition.GetX())>=1){ //the central nest is not in the center, this is a quard arena
+    //          quardArena << 1;
+    //      }
+    //      else{
+    //          quardArena << 0;
+    //     }
         
-        string header = "./results/"+ type+"_CPFA_r"+num_robots.str()+"_tag"+num_tag.str()+"_"+arena_width.str()+"by"+arena_width.str()+"_quard_arena_" + quardArena.str() +"_";
+    //     string header = "./results/"+ type+"_CPFA_r"+num_robots.str()+"_tag"+num_tag.str()+"_"+arena_width.str()+"by"+arena_width.str()+"_quard_arena_" + quardArena.str() +"_";
        
-        unsigned int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick();//qilu 02/06/2021
+    //     unsigned int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick();//qilu 02/06/2021
        
-        /* Real total_travel_time=0;
-        Real total_search_time=0;
-        ofstream travelSearchTimeDataOutput((header+"TravelSearchTimeData.txt").c_str(), ios::app);
-        */
+    //     /* Real total_travel_time=0;
+    //     Real total_search_time=0;
+    //     ofstream travelSearchTimeDataOutput((header+"TravelSearchTimeData.txt").c_str(), ios::app);
+    //     */
         
         
-        argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
+    //     argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
          
-        for(argos::CSpace::TMapPerType::iterator it = footbots.begin(); it != footbots.end(); it++) {
-            argos::CFootBotEntity& footBot = *argos::any_cast<argos::CFootBotEntity*>(it->second);
-            BaseController& c = dynamic_cast<BaseController&>(footBot.GetControllableEntity().GetController());
-            CPFA_controller& c2 = dynamic_cast<CPFA_controller&>(c);
-            CollisionTime += c2.GetCollisionTime();
+    //     for(argos::CSpace::TMapPerType::iterator it = footbots.begin(); it != footbots.end(); it++) {
+    //         argos::CFootBotEntity& footBot = *argos::any_cast<argos::CFootBotEntity*>(it->second);
+    //         BaseController& c = dynamic_cast<BaseController&>(footBot.GetControllableEntity().GetController());
+    //         CPFA_controller& c2 = dynamic_cast<CPFA_controller&>(c);
+    //         CollisionTime += c2.GetCollisionTime();
             
-            /*if(c2.GetStatus() == "SEARCHING"){
-                total_search_time += SimTime-c2.GetTravelingTime();
-                total_travel_time += c2.GetTravelingTime();
-	    }
-            else {
-		total_search_time += c2.GetSearchingTime();
-		total_travel_time += SimTime-c2.GetSearchingTime();
-            } */        
-        }
-        //travelSearchTimeDataOutput<< total_travel_time/ticks_per_second<<", "<<total_search_time/ticks_per_second<<endl;
-        //travelSearchTimeDataOutput.close();   
+    //         /*if(c2.GetStatus() == "SEARCHING"){
+    //             total_search_time += SimTime-c2.GetTravelingTime();
+    //             total_travel_time += c2.GetTravelingTime();
+	//     }
+    //         else {
+	// 	total_search_time += c2.GetSearchingTime();
+	// 	total_travel_time += SimTime-c2.GetSearchingTime();
+    //         } */        
+    //     }
+    //     //travelSearchTimeDataOutput<< total_travel_time/ticks_per_second<<", "<<total_search_time/ticks_per_second<<endl;
+    //     //travelSearchTimeDataOutput.close();   
              
-        ofstream dataOutput( (header+ "iAntTagData.txt").c_str(), ios::app);
-        // output to file
-        if(dataOutput.tellp() == 0) {
-            dataOutput << "tags_collected, collisions_in_seconds, time_in_minutes, random_seed\n";//qilu 08/18
-        }
+    //     ofstream dataOutput( (header+ "iAntTagData.txt").c_str(), ios::app);
+    //     // output to file
+    //     if(dataOutput.tellp() == 0) {
+    //         dataOutput << "tags_collected, collisions_in_seconds, time_in_minutes, random_seed\n";//qilu 08/18
+    //     }
     
-        //dataOutput <<data.CollisionTime/16.0<<", "<< time_in_minutes << ", " << data.RandomSeed << endl;
-        //dataOutput << Score() << ", "<<(CollisionTime-16*Score())/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
-        dataOutput << Score() << ", "<<CollisionTime/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
-        dataOutput.close();
+    //     //dataOutput <<data.CollisionTime/16.0<<", "<< time_in_minutes << ", " << data.RandomSeed << endl;
+    //     //dataOutput << Score() << ", "<<(CollisionTime-16*Score())/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
+    //     dataOutput << Score() << ", "<<CollisionTime/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
+    //     dataOutput.close();
     
-        ofstream forageDataOutput((header+"ForageData.txt").c_str(), ios::app);
-        if(ForageList.size()!=0) forageDataOutput<<"Forage: "<< ForageList[0];
-        for(size_t i=1; i< ForageList.size(); i++) forageDataOutput<<", "<<ForageList[i];
-        forageDataOutput<<"\n";
-        forageDataOutput.close();
+    //     ofstream forageDataOutput((header+"ForageData.txt").c_str(), ios::app);
+    //     if(ForageList.size()!=0) forageDataOutput<<"Forage: "<< ForageList[0];
+    //     for(size_t i=1; i< ForageList.size(); i++) forageDataOutput<<", "<<ForageList[i];
+    //     forageDataOutput<<"\n";
+    //     forageDataOutput.close();
         
-        ofstream trajOutput( (header+ "iAntTrajData.txt").c_str(), ios::app);
-        // output to file
-        //if(trajOutput.tellp() == 0) {
-            trajOutput << "trajs\n";//qilu 11/2023
-        //}
+    //     ofstream trajOutput( (header+ "iAntTrajData.txt").c_str(), ios::app);
+    //     // output to file
+    //     //if(trajOutput.tellp() == 0) {
+    //         trajOutput << "trajs\n";//qilu 11/2023
+    //     //}
         
-        for(map<string, std::vector<CVector2>>::iterator it= Trajectory.begin(); it!= Trajectory.end(); ++it) {
+    //     for(map<string, std::vector<CVector2>>::iterator it= Trajectory.begin(); it!= Trajectory.end(); ++it) {
 			
-			for(size_t j = 0; j < it->second.size(); j++) {
-				trajOutput << it->second[j]<<"; ";
-			}
-			trajOutput << "\n";
+	// 		for(size_t j = 0; j < it->second.size(); j++) {
+	// 			trajOutput << it->second[j]<<"; ";
+	// 		}
+	// 		trajOutput << "\n";
 		
-		}
+	// 	}
         
-		trajOutput.close();
+	// 	trajOutput.close();
         
-      }  
+    //   }  
 
 }
 
@@ -1058,6 +1090,184 @@ void CPFA_loop_functions::clearDotplotData() {
 		argos::LOG << "Cleared dotplot data: deleted " << filesDeleted << " CSV files" << std::endl;
 	} else {
 		argos::LOG << "Dotplot data directory is already clean" << std::endl;
+	}
+}
+
+void CPFA_loop_functions::clearTrajectoryData() {
+    const std::string trajectoryDir = "trajectory_data";
+    
+    // Check if directory exists
+    struct stat info;
+    if (stat(trajectoryDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+        // Directory doesn't exist, nothing to clear
+        return;
+    }
+    
+    // Open directory
+    DIR* dir = opendir(trajectoryDir.c_str());
+    if (dir == nullptr) {
+        argos::LOGERR << "Failed to open trajectory_data directory for cleaning" << std::endl;
+        return;
+    }
+    
+    // Read directory entries and delete CSV files
+    struct dirent* entry;
+    int filesDeleted = 0;
+    
+    while ((entry = readdir(dir)) != nullptr) {
+        // Skip . and .. entries
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        // Check if it's a CSV file
+        std::string filename = entry->d_name;
+        if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".csv") {
+            std::string fullPath = trajectoryDir + "/" + filename;
+            if (remove(fullPath.c_str()) == 0) {
+                filesDeleted++;
+            } else {
+                argos::LOGERR << "Failed to delete: " << fullPath << std::endl;
+            }
+        }
+    }
+    
+    closedir(dir);
+    
+    if (filesDeleted > 0) {
+        argos::LOG << "Cleared trajectory data: deleted " << filesDeleted << " CSV files" << std::endl;
+    } else {
+        argos::LOG << "Trajectory data directory is already clean" << std::endl;
+    }
+}
+
+void CPFA_loop_functions::exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const argos::CVector2& targetPosition) {
+	if (trajectory.empty()) return;
+	
+	// Create trajectory_data directory if it doesn't exist
+	std::string dirPath = "trajectory_data";
+	createDirectoryIfNotExists(dirPath);
+	
+	// Create filename with robot ID and timestamp
+	argos::Real currentTime = getSimTimeInSeconds();
+	std::ostringstream filename;
+	filename << dirPath << "/" << robotId << "_trajectory_" << std::fixed << std::setprecision(1) << currentTime << ".csv";
+	
+	std::ofstream file(filename.str());
+	if (file.is_open()) {
+		// Write header with target position
+		file << "x,y,target_x,target_y\n";
+		for (const auto& pos : trajectory) {
+			file << pos.GetX() << "," << pos.GetY() << "," << targetPosition.GetX() << "," << targetPosition.GetY() << "\n";
+		}
+		file.close();
+		// argos::LOG << "Exported trajectory for robot " << robotId << " with " << trajectory.size() << " points to " << filename.str() << std::endl;
+	} else {
+		argos::LOGERR << "Failed to open trajectory file: " << filename.str() << std::endl;
+	}
+}
+
+void CPFA_loop_functions::exportFoodLocationsToCSV(const std::string& filename) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		argos::LOGERR << "Failed to open file for food locations export: " << filename << std::endl;
+		return;
+	}
+	
+	// Get food distance tolerance from one of the robot controllers
+	argos::Real foodDistanceTolerance = 0.13; // Default value
+	argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
+	if (!footbots.empty()) {
+		argos::CFootBotEntity& footBot = *argos::any_cast<argos::CFootBotEntity*>(footbots.begin()->second);
+		BaseController& c = dynamic_cast<BaseController&>(footBot.GetControllableEntity().GetController());
+		CPFA_controller& c2 = dynamic_cast<CPFA_controller&>(c);
+		foodDistanceTolerance = sqrt(c2.FoodDistanceTolerance); // It's stored as squared value
+	}
+	
+	// Write header with metadata
+	file << "# Food Locations Export - Simulation Time: " << getSimTimeInSeconds() << " seconds" << std::endl;
+	file << "# Total Food Items: " << FoodList.size() << std::endl;
+	file << "# Food Distribution: " << FoodDistribution << std::endl;
+	file << "# Food Radius: " << FoodRadius << std::endl;
+	file << "# Food Distance Tolerance: " << foodDistanceTolerance << std::endl;
+	file << "# Random Seed: " << RandomSeed << std::endl;
+	
+	// Write cluster information if available (for clustered distribution)
+	if (FoodDistribution == 1 && !ClusterCenters.empty()) {
+		file << "# Number of Clusters: " << ClusterCenters.size() << std::endl;
+		file << "# Cluster Dimensions: " << ClusterWidthX << "x" << ClusterWidthY << std::endl;
+		for(size_t i = 0; i < ClusterCenters.size(); i++) {
+			file << "# Cluster " << i << " Center: " << ClusterCenters[i].GetX() << "," << ClusterCenters[i].GetY() << std::endl;
+		}
+	}
+	
+	file << "# === FOOD LOCATIONS DATA ===" << std::endl;
+	file << "X,Y,Status" << std::endl;
+	
+	// Write all food locations with their status
+	for(size_t i = 0; i < FoodList.size(); i++) {
+		// Check if this food has been collected by looking in CollectedFoodList
+		bool isCollected = false;
+		for(const auto& collectedFood : CollectedFoodList) {
+			if((FoodList[i] - collectedFood).SquareLength() < 0.001) { // Very small tolerance for comparison
+				isCollected = true;
+				break;
+			}
+		}
+		
+		file << FoodList[i].GetX() << "," << FoodList[i].GetY() << "," 
+			 << (isCollected ? "collected" : "available") << std::endl;
+	}
+	
+	file.close();
+	// argos::LOG << "Food locations exported to: " << filename << " (" << FoodList.size() << " items)" << std::endl;
+}
+
+void CPFA_loop_functions::clearFoodData() {
+	const std::string foodDir = "food_data";
+	
+	// Check if directory exists
+	struct stat info;
+	if (stat(foodDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+		// Directory doesn't exist, nothing to clear
+		return;
+	}
+	
+	// Open directory
+	DIR* dir = opendir(foodDir.c_str());
+	if (dir == nullptr) {
+		argos::LOGERR << "Failed to open food_data directory for cleaning" << std::endl;
+		return;
+	}
+	
+	// Read directory entries and delete CSV files
+	struct dirent* entry;
+	int filesDeleted = 0;
+	
+	while ((entry = readdir(dir)) != nullptr) {
+		// Skip . and .. entries
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+			continue;
+		}
+		
+		// Check if it's a CSV file
+		std::string filename = entry->d_name;
+		if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".csv") {
+			std::string fullPath = foodDir + "/" + filename;
+			if (remove(fullPath.c_str()) == 0) {
+				filesDeleted++;
+			} else {
+				argos::LOGERR << "Failed to delete: " << fullPath << std::endl;
+			}
+		}
+	}
+	
+	closedir(dir);
+	
+	if (filesDeleted > 0) {
+		argos::LOG << "Cleared food data: deleted " << filesDeleted << " CSV files" << std::endl;
+	} else {
+		argos::LOG << "Food data directory is already clean" << std::endl;
 	}
 }
 

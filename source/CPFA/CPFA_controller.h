@@ -48,6 +48,12 @@ class CPFA_controller : public BaseController {
         
 		std::vector<argos::CVector2> robotMemory;
 		Real lastMemoryStorageTime;
+		argos::CVector2 targetFromRandomSearch; // Store the target set during random search for logging
+		argos::CVector2 previousTarget;
+		
+		/* Trajectory tracking variables */
+		std::vector<argos::CVector2> currentTrajectory;
+		bool isRecordingTrajectory;
 	private:
   string 			controllerID;//qilu 07/26/2016
 

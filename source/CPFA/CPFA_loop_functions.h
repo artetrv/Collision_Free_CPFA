@@ -73,9 +73,13 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		int getGridVisitCount(argos::CVector2 worldPosition);
 		void exportGridToCSV(const std::string& filename);
 		void exportVisitedPositionsToCSV(const std::string& filename);
+		void exportFoodLocationsToCSV(const std::string& filename);
+		void exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const argos::CVector2& targetPosition);
 		bool createDirectoryIfNotExists(const std::string& dirPath);
 		void clearHeatmapData();
 		void clearDotplotData();
+		void clearTrajectoryData();
+		void clearFoodData();
 		void incrementRejectedLocationCounter();
 		std::vector<argos::CVector2> VisitedPositions;
 		std::vector<argos::CVector2> ClusterCenters;

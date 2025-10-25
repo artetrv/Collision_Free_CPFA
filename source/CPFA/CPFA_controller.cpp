@@ -23,7 +23,8 @@ CPFA_controller::CPFA_controller() :
         updateFidelity(false),
         last_time_in_seconds(0),
         lastMemoryStorageTime(0.0),
-        VisitCountThreshold(1)
+        VisitCountThreshold(3),
+        isRecordingTrajectory(false)
 {
 }
 
@@ -99,14 +100,22 @@ void CPFA_controller::ControlStep() {
 
 	// Add line so we can draw the trail
 	curr_time_in_seconds = (argos::Real)(SimulationTick() / SimulationTicksPerSecond()); 
-     
+     //print state of the robot
+	//  argos::LOG << "Robot " << controllerID << " state: " << GetStatus() << std::endl;
+	//print the current target only when it is changed
+	// if(GetTarget() != previousTarget) {
+	// 	previousTarget = GetTarget();
+	// 	argos::LOG << "Robot " << controllerID << " new target: " << GetTarget() << std::endl;
+	// }
+	//print out state of robot
+	// argos::LOG << "Robot " << controllerID << " state: " << GetStatus() << std::endl;
+
 	// Periodic location storage every 5 seconds - only during random search and only in enhanced mode
-	if(SearchAlgorithmMode == 1 && 
+	if(
 	   curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && 
 	   !isHoldingFood && 
-	   !isInformed &&
-	   GetStatus() == "SEARCHING"
-	//    (GetPosition() - LoopFunctions->NestPosition).Length() > 1.5
+	   !isInformed && 
+	   CPFA_state == SEARCHING
 	) {
 		argos::CVector2 currentPosition = GetPosition();
 		
@@ -121,7 +130,6 @@ void CPFA_controller::ControlStep() {
 		// Update the last storage time
 		lastMemoryStorageTime = curr_time_in_seconds;
 	}
-     
 	if(curr_time_in_seconds - last_time_in_seconds >= 0)
 	{
 		// CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
@@ -137,6 +145,13 @@ void CPFA_controller::ControlStep() {
 		// //argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
 		// previous_position = GetPosition();
 		// last_time_in_seconds = curr_time_in_seconds;
+		
+		// Record position for trajectory if tracking is active
+		if(isRecordingTrajectory) {
+			currentTrajectory.push_back(GetPosition());
+		}
+		
+		last_time_in_seconds = curr_time_in_seconds;
      }
 	//UpdateTargetRayList();
 	CPFA();
@@ -155,6 +170,10 @@ void CPFA_controller::Reset() {
     // Reset robot memory tracking
     robotMemory.clear();
     lastMemoryStorageTime = 0.0;
+    
+    // Reset trajectory tracking
+    currentTrajectory.clear();
+    isRecordingTrajectory = false;
     
   	LoopFunctions->CollisionTime=0; //qilu 09/26/2016
     
@@ -311,7 +330,18 @@ void CPFA_controller::Departing()
 	/* When not informed, continue to travel until randomly switching to the searching state. */
     if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0) {
        if(isInformed == false){
-           if(SimulationTick()%(5*SimulationTicksPerSecond())==0 && randomNumber < LoopFunctions->ProbabilityOfSwitchingToSearching){
+           
+		       // Check if target is near a wall and use more lenient tolerance
+       argos::CVector2 target = GetTarget();
+       argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
+       bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer || 
+                       target.GetX() < ForageRangeX.GetMin() + wallBuffer ||
+                       target.GetY() > ForageRangeY.GetMax() - wallBuffer || 
+                       target.GetY() < ForageRangeY.GetMin() + wallBuffer);
+       
+       argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
+    //    if(SimulationTick()%(5*SimulationTicksPerSecond())==0 && randomNumber < LoopFunctions->ProbabilityOfSwitchingToSearching){
+	       if(distanceToTarget < tolerance){		
 			 //LOG<<"Switch to search..."<<endl;
                  Stop();
                  SearchTime = 0;
@@ -328,10 +358,12 @@ void CPFA_controller::Departing()
                  argos::CVector2 turn_vector(SearchStepSize, turn_angle);
                  SetIsHeadingToNest(false);
                  SetTarget(turn_vector + GetPosition());
+				//  argos::LOG << "Robot " << controllerID << " is switching to SEARCHING state" << std::endl;
 		   }
-		   else if(distanceToTarget < TargetDistanceTolerance){
-			 SetRandomSearchLocation();
-		   }
+		//    else if(distanceToTarget < tolerance){
+		// 	 SetRandomSearchLocation();
+		// 	//  argos::LOG << "Reached target, setting new random search location: " << GetTarget() << " at tick: " << SimulationTick() << std::endl;
+		//    }
 	   }
 	 } 
 		 
@@ -371,7 +403,18 @@ void CPFA_controller::Searching() {
        // If we reached our target search location, set a new one. The 
        // new search location calculation is different based on whether
        // we are currently using informed or uninformed search.
-       if(distance.SquareLength() < TargetDistanceTolerance) {
+       
+       // Check if target is near a wall and use more lenient tolerance
+       argos::CVector2 target = GetTarget();
+       argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
+       bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer || 
+                       target.GetX() < ForageRangeX.GetMin() + wallBuffer ||
+                       target.GetY() > ForageRangeY.GetMax() - wallBuffer || 
+                       target.GetY() < ForageRangeY.GetMin() + wallBuffer);
+       
+       argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
+       
+       if(distance.SquareLength() < tolerance) {
          // randomly give up searching
          if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest) {
              
@@ -386,6 +429,13 @@ void CPFA_controller::Searching() {
              CPFA_state = RETURNING;
              searchingTime+=SimulationTick()-startTime;
              startTime = SimulationTick();
+
+             // Stop trajectory recording and export if we were recording
+             if(isRecordingTrajectory) {
+                 LoopFunctions->exportRandomSearchTrajectory(controllerID, currentTrajectory, targetFromRandomSearch);
+                 currentTrajectory.clear();
+                 isRecordingTrajectory = false;
+             }
 
              /*
              ofstream log_output_stream;
@@ -432,8 +482,8 @@ void CPFA_controller::Searching() {
          else{
           
               SetIsHeadingToNest(false);
-              
-              if(IsAtTarget()) {
+              argos::LOG << "Robot: " << GetId() << " - INFORMED SEARCH: Reached target location. " << std::endl;
+            //   if(IsAtTarget()) {
                   size_t          t           = SearchTime++;
                   argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
                   argos::Real     pi          = (argos::CRadians::PI).GetValue();
@@ -467,7 +517,7 @@ void CPFA_controller::Searching() {
                   log_output_stream.close();
                   */
                   SetTarget(turn_vector + GetPosition());
-              }
+            //   }
          }
 	  } //not reach the target location
 	  else {
@@ -509,6 +559,13 @@ void CPFA_controller::Surveying() {
 		survey_count = 0; // Reset
         searchingTime+=SimulationTick()-startTime;//qilu 10/22
         startTime = SimulationTick();//qilu 10/22
+        
+        // Stop trajectory recording and export if we were recording
+        if(isRecordingTrajectory) {
+            LoopFunctions->exportRandomSearchTrajectory(controllerID, currentTrajectory, targetFromRandomSearch);
+            currentTrajectory.clear();
+            isRecordingTrajectory = false;
+        }
             
 	}
 }
@@ -529,14 +586,15 @@ void CPFA_controller::Returning() {
 	// Are we there yet? (To the nest, that is.)
 	if(IsInTheNest()) {
 
-		/* LOGIC TO SEND LAST 5 LOCATIONS TO CENTRAL CONTROLLER - only in enhanced mode */
-		if(SearchAlgorithmMode == 1 && !robotMemory.empty()) {
-			// argos::LOG << "Robot " << controllerID << " (Enhanced) returning to nest with " 
-			// 		   << robotMemory.size() << " stored locations:" << std::endl;
+		/* LOGIC TO SEND LAST 5 LOCATIONS TO CENTRAL CONTROLLER */
+		// if(SearchAlgorithmMode == 1 && !robotMemory.empty()) {
+		if(!robotMemory.empty()) {
+			argos::LOG << "Robot " << controllerID << " returning to nest with " 
+					   << robotMemory.size() << " stored locations:" << std::endl;
 			
-			// for(size_t i = 0; i < robotMemory.size(); i++) {
-			// 	argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
-			// }
+			for(size_t i = 0; i < robotMemory.size(); i++) {
+				argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
+			}
 			
 			// Send locations to the central controller to update the grid
 			LoopFunctions->receiveRobotMemory(controllerID, robotMemory);
@@ -644,99 +702,85 @@ void CPFA_controller::Returning() {
 }
 	
 void CPFA_controller::SetRandomSearchLocation() {
-	// Set LEDs to red to indicate random search mode
-	m_pcLEDs->SetAllColors(CColor::RED);
-	
-	argos::Real x = 0.0, y = 0.0;
-	argos::CVector2 candidateTarget;
-	
-	// Generate random target coordinates based on wall selection
-	argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-	
-	/* north wall */
-	if(random_wall < 0.25) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMax();
-	}
-	/* south wall */
-	else if(random_wall < 0.5) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMin();
-	}
-	/* east wall */
-	else if(random_wall < 0.75) {
-		x = ForageRangeX.GetMax();
-		y = RNG->Uniform(ForageRangeY);
-	}
-	/* west wall */
-	else {
-		x = ForageRangeX.GetMin();
-		y = RNG->Uniform(ForageRangeY);
-	}
-	
-	candidateTarget = argos::CVector2(x, y);
-	
-	// Apply enhanced algorithm with visit count avoidance if mode is 1 (enhanced)
-	if(SearchAlgorithmMode == 1) {
-		int visitCount = 0;
-		int maxAttempts = 50; // Prevent infinite loops
-		int attempts = 0;
-		
-		do {
-			attempts++;
-			
-			// Check visit count for this grid cell
-			visitCount = LoopFunctions->getGridVisitCount(candidateTarget);
-			
-			// Calculate avoidance probability using sigmoid function
-			// Probability = 1 / (1 + e^(-k(visitCount - threshold)))
-			// This creates a smooth S-curve where:
-			// - visitCount << threshold: probability approaches 0%
-			// - visitCount >> threshold: probability approaches 100%
-			argos::Real k = 0.5; // Steepness parameter (higher = steeper transition)
-			argos::Real avoidanceProbability = 1.0 / (1.0 + std::exp(-k * (visitCount - VisitCountThreshold)));
-			
-			// Generate random number to decide whether to avoid this location
-			argos::Real randomDecision = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-			
-			// Accept the location if we don't avoid it, or if we've exceeded max attempts
-			if(randomDecision > avoidanceProbability || attempts >= maxAttempts) {
-				if(attempts >= maxAttempts) {
-					argos::LOG << "Robot " << controllerID << " (Enhanced) reached max attempts (" << maxAttempts 
-							   << "), using target with visit count " << visitCount << std::endl;
-				} else {
-					argos::LOG << "Robot " << controllerID << " (Enhanced) selected target with visit count " << visitCount 
-							   << " (attempt " << attempts << ")" << std::endl;
-				}
-				break;
-			}
-			
-			// Location rejected - increment global counter
-			LoopFunctions->incrementRejectedLocationCounter();
-			
-			// Generate new candidate if we're avoiding this one
-			random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-			if(random_wall < 0.25) {
-				x = RNG->Uniform(ForageRangeX);
-				y = ForageRangeY.GetMax();
-			} else if(random_wall < 0.5) {
-				x = RNG->Uniform(ForageRangeX);
-				y = ForageRangeY.GetMin();
-			} else if(random_wall < 0.75) {
-				x = ForageRangeX.GetMax();
-				y = RNG->Uniform(ForageRangeY);
-			} else {
-				x = ForageRangeX.GetMin();
-				y = RNG->Uniform(ForageRangeY);
-			}
-			candidateTarget = argos::CVector2(x, y);
-			
-		} while(true);
-	}
-	// For SearchAlgorithmMode == 0 (baseline), we just use the randomly generated target without any avoidance
-		
-	SetIsHeadingToNest(true); // Turn off error for this
-	SetTarget(candidateTarget);
+    // Set LEDs to red to indicate random search mode
+    m_pcLEDs->SetAllColors(CColor::RED);
+    
+    argos::Real x = 0.0, y = 0.0;
+    argos::CVector2 candidateTarget;
+    
+    // Apply enhanced algorithm with sampling if mode is 1 (enhanced)
+    if(SearchAlgorithmMode == 1) {
+        const int numSamples = 5;
+        std::vector<argos::CVector2> candidates(numSamples);
+        std::vector<int> visitCounts(numSamples);
+        
+        // Generate 5 random candidate locations
+        for(int i = 0; i < numSamples; i++) {
+            x = RNG->Uniform(ForageRangeX);
+            y = RNG->Uniform(ForageRangeY);
+            candidates[i] = argos::CVector2(x, y);
+            visitCounts[i] = LoopFunctions->getGridVisitCount(candidates[i]);
+        }
+        
+        // Find cells with visit count of 0
+        std::vector<int> zeroIndices;
+        for(int i = 0; i < numSamples; i++) {
+            if(visitCounts[i] == 0) {
+                zeroIndices.push_back(i);
+            }
+        }
+        
+        int selectedIndex = 0;
+        
+        if(!zeroIndices.empty()) {
+            // If we have zero visit count cells, select randomly among them
+            int randomZeroIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, zeroIndices.size()));
+            selectedIndex = zeroIndices[randomZeroIndex];
+            // argos::LOG << "Robot " << controllerID << " selected unvisited location from " << zeroIndices.size() << " unvisited candidates" << std::endl;
+        } else {
+            // No zero visit counts, use weighted selection based on 1/visitCount
+            std::vector<argos::Real> weights(numSamples);
+            argos::Real totalWeight = 0.0;
+            
+            // Calculate weights (1/visitCount)
+            for(int i = 0; i < numSamples; i++) {
+                weights[i] = 1.0 / visitCounts[i];
+                totalWeight += weights[i];
+            }
+            
+            // Randomly select based on weights
+            argos::Real randomWeight = RNG->Uniform(argos::CRange<argos::Real>(0.0, totalWeight));
+            argos::Real cumulativeWeight = 0.0;
+            
+            for(int i = 0; i < numSamples; i++) {
+                cumulativeWeight += weights[i];
+                if(randomWeight <= cumulativeWeight) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // argos::LOG << "Robot " << controllerID << " selected location using weighted selection with visit count " << visitCounts[selectedIndex] << std::endl;
+        }
+        
+        candidateTarget = candidates[selectedIndex];
+    } else {
+        // For SearchAlgorithmMode == 0 (baseline), use simple random generation
+        x = RNG->Uniform(ForageRangeX);
+        y = RNG->Uniform(ForageRangeY);
+        candidateTarget = argos::CVector2(x, y);
+    }
+        
+    SetIsHeadingToNest(true); // Turn off error for this
+    SetTarget(candidateTarget);
+    targetFromRandomSearch = candidateTarget;
+    
+    // Start trajectory recording
+    currentTrajectory.clear();
+    isRecordingTrajectory = true;
+    currentTrajectory.push_back(GetPosition()); // Record starting position
+    
+    // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
 }
 
 /*****
