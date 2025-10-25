@@ -23,7 +23,7 @@ CPFA_controller::CPFA_controller() :
         updateFidelity(false),
         last_time_in_seconds(0),
         lastMemoryStorageTime(0.0),
-        VisitCountThreshold(5)
+        VisitCountThreshold(1)
 {
 }
 
@@ -102,15 +102,17 @@ void CPFA_controller::ControlStep() {
      
 	// Periodic location storage every 5 seconds - only during random search and only in enhanced mode
 	if(SearchAlgorithmMode == 1 && 
-	   curr_time_in_seconds - lastMemoryStorageTime >= 5.0 && 
+	   curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && 
 	   !isHoldingFood && 
-	   !isInformed && 
-	   (GetPosition() - LoopFunctions->NestPosition).Length() > 1.5) {
+	   !isInformed &&
+	   GetStatus() == "SEARCHING"
+	//    (GetPosition() - LoopFunctions->NestPosition).Length() > 1.5
+	) {
 		argos::CVector2 currentPosition = GetPosition();
 		
 		// Add current position to robotMemory
 		robotMemory.push_back(currentPosition);
-		argos::LOG << "Robot " << controllerID << " (Enhanced) storing position: " << currentPosition << std::endl;
+		// argos::LOG << "Robot " << controllerID << " (Enhanced) storing position: " << currentPosition << std::endl;
 		// Maintain sliding window of maximum 5 locations
 		if(robotMemory.size() > 5) {
 			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry (most efficient for vector)
@@ -529,12 +531,12 @@ void CPFA_controller::Returning() {
 
 		/* LOGIC TO SEND LAST 5 LOCATIONS TO CENTRAL CONTROLLER - only in enhanced mode */
 		if(SearchAlgorithmMode == 1 && !robotMemory.empty()) {
-			argos::LOG << "Robot " << controllerID << " (Enhanced) returning to nest with " 
-					   << robotMemory.size() << " stored locations:" << std::endl;
+			// argos::LOG << "Robot " << controllerID << " (Enhanced) returning to nest with " 
+			// 		   << robotMemory.size() << " stored locations:" << std::endl;
 			
-			for(size_t i = 0; i < robotMemory.size(); i++) {
-				argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
-			}
+			// for(size_t i = 0; i < robotMemory.size(); i++) {
+			// 	argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
+			// }
 			
 			// Send locations to the central controller to update the grid
 			LoopFunctions->receiveRobotMemory(controllerID, robotMemory);
@@ -586,12 +588,16 @@ void CPFA_controller::Returning() {
 		        SetIsHeadingToNest(false);
 		        SetTarget(SiteFidelityPosition);
 		        isInformed = true;
+		        // Turn off red LEDs when switching to site fidelity
+		        m_pcLEDs->SetAllColors(CColor::GREEN);
 	    }
       // use pheromone waypoints
       else if(SetTargetPheromone()) {
           //log_output_stream << "Using site pheremone" << endl;
           isInformed = true;
           isUsingSiteFidelity = false;
+          // Turn off red LEDs when switching to pheromone following
+          m_pcLEDs->SetAllColors(CColor::GREEN);
       }
        // use random search
       else {
@@ -638,6 +644,9 @@ void CPFA_controller::Returning() {
 }
 	
 void CPFA_controller::SetRandomSearchLocation() {
+	// Set LEDs to red to indicate random search mode
+	m_pcLEDs->SetAllColors(CColor::RED);
+	
 	argos::Real x = 0.0, y = 0.0;
 	argos::CVector2 candidateTarget;
 	
@@ -692,8 +701,18 @@ void CPFA_controller::SetRandomSearchLocation() {
 			
 			// Accept the location if we don't avoid it, or if we've exceeded max attempts
 			if(randomDecision > avoidanceProbability || attempts >= maxAttempts) {
+				if(attempts >= maxAttempts) {
+					argos::LOG << "Robot " << controllerID << " (Enhanced) reached max attempts (" << maxAttempts 
+							   << "), using target with visit count " << visitCount << std::endl;
+				} else {
+					argos::LOG << "Robot " << controllerID << " (Enhanced) selected target with visit count " << visitCount 
+							   << " (attempt " << attempts << ")" << std::endl;
+				}
 				break;
 			}
+			
+			// Location rejected - increment global counter
+			LoopFunctions->incrementRejectedLocationCounter();
 			
 			// Generate new candidate if we're avoiding this one
 			random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
@@ -713,13 +732,6 @@ void CPFA_controller::SetRandomSearchLocation() {
 			candidateTarget = argos::CVector2(x, y);
 			
 		} while(true);
-		
-		if(attempts >= maxAttempts) {
-			argos::Real finalAvoidanceProbability = 1.0 / (1.0 + std::exp(-0.5 * (visitCount - VisitCountThreshold)));
-			argos::LOG << "Robot " << controllerID << " (Enhanced) reached max attempts (" << maxAttempts 
-					   << "), using target with visit count " << visitCount 
-					   << " (avoidance probability was " << (finalAvoidanceProbability * 100.0) << "%)" << std::endl;
-		}
 	}
 	// For SearchAlgorithmMode == 0 (baseline), we just use the randomly generated target without any avoidance
 		

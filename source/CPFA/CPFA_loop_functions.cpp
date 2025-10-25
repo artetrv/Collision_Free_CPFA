@@ -38,7 +38,7 @@ CPFA_loop_functions::CPFA_loop_functions() :
 	RateOfSiteFidelity(0.0),
 	RateOfLayingPheromone(0.0),
 	RateOfPheromoneDecay(0.0),
-	SearchAlgorithmMode(1),  // Default to enhanced algorithm
+	SearchAlgorithmMode(0),  // Default to enhanced algorithm
 	FoodRadius(0.05),
 	FoodRadiusSquared(0.0025),
 	NestRadius(0.12),
@@ -49,7 +49,8 @@ CPFA_loop_functions::CPFA_loop_functions() :
 	CameraRadiusSquared(2.25),
 	NumDistributedFood(0),
 	score(0),
-	PrintFinalScore(0)
+	PrintFinalScore(0),
+	RejectedLocationCounter(0)
 {}
 
 void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {	
@@ -68,7 +69,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(CPFA_node, "RateOfSiteFidelity",                RateOfSiteFidelity);
 	argos::GetNodeAttribute(CPFA_node, "RateOfLayingPheromone",             RateOfLayingPheromone);
 	argos::GetNodeAttribute(CPFA_node, "RateOfPheromoneDecay",              RateOfPheromoneDecay);
-	// argos::GetNodeAttribute(CPFA_node, "SearchAlgorithmMode",               SearchAlgorithmMode);
+	argos::GetNodeAttribute(CPFA_node, "SearchAlgorithmMode",               SearchAlgorithmMode);
 	
 	argos::GetNodeAttribute(CPFA_node, "PrintFinalScore",                   PrintFinalScore);
 
@@ -294,6 +295,7 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 void CPFA_loop_functions::PostExperiment() {
 	  
      printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
+     printf("Total rejected random search locations: %lu\n", RejectedLocationCounter);
        
                   
     if (PrintFinalScore == 1) {
@@ -686,6 +688,10 @@ int CPFA_loop_functions::getSearchAlgorithmMode() {
 	return SearchAlgorithmMode;
 }
 
+void CPFA_loop_functions::incrementRejectedLocationCounter() {
+	RejectedLocationCounter++;
+}
+
 argos::Real CPFA_loop_functions::getSimTimeInSeconds() {
 	int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick(); //qilu 02/06/2021
 	float sim_time = GetSpace().GetSimulationClock();
@@ -748,41 +754,41 @@ void CPFA_loop_functions::create_grid(argos::Real cell_size) {
 	argos::LOG << "  Total cells: " << GridWidth * GridHeight << std::endl;
 	
 	// Print the grid visualization (showing a sample if it's too large)
-	argos::LOG << "Grid visualization (all cells initialized to 0):" << std::endl;
+	// argos::LOG << "Grid visualization (all cells initialized to 0):" << std::endl;
 	
 	// If grid is small enough, print the entire grid
 	// Print from top to bottom to match world coordinate system (higher Y values first)
-	if (GridWidth <= 20 && GridHeight <= 20) {
-		for (int i = GridHeight - 1; i >= 0; i--) {
-			std::string row = "";
-			for (size_t j = 0; j < GridWidth; j++) {
-				row += std::to_string(Grid[i][j]) + " ";
-			}
-			argos::LOG << row << std::endl;
-		}
-	} else {
-		// For larger grids, show top 10x10 section (from higher Y values down)
-		argos::LOG << "Grid is large (" << GridWidth << "x" << GridHeight << "), showing top 10x10 section:" << std::endl;
-		size_t max_rows = std::min(GridHeight, static_cast<size_t>(10));
-		size_t max_cols = std::min(GridWidth, static_cast<size_t>(10));
+	// if (GridWidth <= 20 && GridHeight <= 20) {
+	// 	for (int i = GridHeight - 1; i >= 0; i--) {
+	// 		std::string row = "";
+	// 		for (size_t j = 0; j < GridWidth; j++) {
+	// 			row += std::to_string(Grid[i][j]) + " ";
+	// 		}
+	// 		argos::LOG << row << std::endl;
+	// 	}
+	// } else {
+	// 	// For larger grids, show top 10x10 section (from higher Y values down)
+	// 	argos::LOG << "Grid is large (" << GridWidth << "x" << GridHeight << "), showing top 10x10 section:" << std::endl;
+	// 	size_t max_rows = std::min(GridHeight, static_cast<size_t>(10));
+	// 	size_t max_cols = std::min(GridWidth, static_cast<size_t>(10));
 		
-		// Start from the top rows (higher Y values) and work down
-		for (int i = GridHeight - 1; i >= static_cast<int>(GridHeight - max_rows); i--) {
-			std::string row = "";
-			for (size_t j = 0; j < max_cols; j++) {
-				row += std::to_string(Grid[i][j]) + " ";
-			}
-			if (GridWidth > 10) row += "...";
-			argos::LOG << row << std::endl;
-		}
-		if (GridHeight > 10) {
-			argos::LOG << "..." << std::endl;
-		}
-	}
+	// 	// Start from the top rows (higher Y values) and work down
+	// 	for (int i = GridHeight - 1; i >= static_cast<int>(GridHeight - max_rows); i--) {
+	// 		std::string row = "";
+	// 		for (size_t j = 0; j < max_cols; j++) {
+	// 			row += std::to_string(Grid[i][j]) + " ";
+	// 		}
+	// 		if (GridWidth > 10) row += "...";
+	// 		argos::LOG << row << std::endl;
+	// 	}
+	// 	if (GridHeight > 10) {
+	// 		argos::LOG << "..." << std::endl;
+	// 	}
+	// }
 }
 
 void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const std::vector<argos::CVector2>& robotMemory) {
-	argos::LOG << "Receiving robot memory from " << robotId << " with " << robotMemory.size() << " locations" << std::endl;
+	// argos::LOG << "Receiving robot memory from " << robotId << " with " << robotMemory.size() << " locations" << std::endl;
 	
 	// Store the received memory so we could remember the exact positions the robots have visited
 	for(const auto& pos : robotMemory) {

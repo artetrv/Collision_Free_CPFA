@@ -76,6 +76,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		bool createDirectoryIfNotExists(const std::string& dirPath);
 		void clearHeatmapData();
 		void clearDotplotData();
+		void incrementRejectedLocationCounter();
 		std::vector<argos::CVector2> VisitedPositions;
 		std::vector<argos::CVector2> ClusterCenters;
 	protected:
@@ -165,6 +166,7 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		bool IsCollidingWithFood(argos::CVector2 p);
 		double score;
 		int PrintFinalScore;
+		size_t RejectedLocationCounter;
 };
 
 #endif /* CPFA_LOOP_FUNCTIONS_H */
