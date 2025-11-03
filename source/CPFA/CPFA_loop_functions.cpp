@@ -119,7 +119,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
         ArenaWidth = ArenaSize[0];
         
         // Create the grid with a default cell size of 1 meters
-        create_grid(0.25);
+        create_grid(0.75);
         
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
