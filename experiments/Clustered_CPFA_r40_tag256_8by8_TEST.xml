@@ -40,7 +40,7 @@
 
     <!-- evolvable parameters -->
         <CPFA PrintFinalScore="1" 
-        ProbabilityOfReturningToNest="0.2189370369448" 
+        ProbabilityOfReturningToNest="0.0189370369448" 
         ProbabilityOfSwitchingToSearching="0.765015191742" 
         RateOfInformedSearchDecay="0.346149969858" 
         RateOfLayingPheromone="14.4422484524" 
