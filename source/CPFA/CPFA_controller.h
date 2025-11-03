@@ -51,6 +51,12 @@ class CPFA_controller : public BaseController {
 		argos::CVector2 targetFromRandomSearch; // Store the target set during random search for logging
 		argos::CVector2 previousTarget;
 		
+		/* Spiral search variables */
+		std::vector<argos::CVector2> spiralSearchLocations;
+		std::vector<argos::CVector2> visitedSpiralLocations;
+		size_t currentSpiralIndex;
+		bool isUsingSpiralSearch;
+		
 		/* Trajectory tracking variables */
 		std::vector<argos::CVector2> currentTrajectory;
 		bool isRecordingTrajectory;
@@ -76,6 +82,8 @@ class CPFA_controller : public BaseController {
 		bool isHoldingFood;
 		bool isUsingSiteFidelity;
 		bool isGivingUpSearch;
+		bool isFollowingRandomTarget;
+		size_t randomTargetSearchTime;
   
 		size_t ResourceDensity;
 		size_t RobotDensity; //qilu 06/2023

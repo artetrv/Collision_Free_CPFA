@@ -157,6 +157,16 @@ class LiveHeatmapFoodViewer:
                 self.cbar.update_normal(self.im)
             
             # Add visit count text inside each cell
+            # Calculate actual cell size from C++ grid system
+            arena_width = 2 * arena_half_size  # 8 meters
+            nominal_cell_size = 0.75
+            num_cells = int(np.ceil(arena_width / nominal_cell_size))  # 11 cells
+            actual_cell_size = arena_width / num_cells  # 8/11 ≈ 0.727m
+            
+            # Adjust font size based on actual cell size
+            base_font_size = 8
+            font_size = max(8, min(16, int(base_font_size * actual_cell_size / 0.25)))
+            
             for i in range(height):
                 for j in range(width):
                     visit_count = int(self.grid_data[i, j])
@@ -170,7 +180,7 @@ class LiveHeatmapFoodViewer:
                         
                         self.ax.text(x_pos, y_pos, str(visit_count), 
                                    ha='center', va='center', 
-                                   fontsize=8, fontweight='bold',
+                                   fontsize=font_size, fontweight='bold',
                                    color=text_color)
         
         # Draw food locations if available
@@ -204,16 +214,28 @@ class LiveHeatmapFoodViewer:
         self.ax.set_xlim(-arena_half_size, arena_half_size)
         self.ax.set_ylim(-arena_half_size, arena_half_size)
         
-        # Grid lines at 1m intervals
-        grid_lines = np.arange(-arena_half_size, arena_half_size + 1, 1)
-        for x in grid_lines:
+        # Grid lines based on actual C++ grid system
+        # From C++: GridWidth = ceil(8.0 / 0.75) = 11 cells
+        # Each cell is actually 8/11 ≈ 0.727m wide, not 0.75m
+        
+        arena_width = 2 * arena_half_size  # 8 meters
+        nominal_cell_size = 0.75
+        num_cells = int(np.ceil(arena_width / nominal_cell_size))  # 11 cells
+        actual_cell_size = arena_width / num_cells  # 8/11 ≈ 0.727m
+        
+        # Create grid positions that match the C++ grid exactly
+        # 11 cells means 12 grid lines (boundaries)
+        grid_positions = np.linspace(-arena_half_size, arena_half_size, num_cells + 1)
+        
+        # Draw grid lines at cell boundaries only
+        for x in grid_positions:
             self.ax.axvline(x, color='gray', alpha=0.3, linewidth=0.5)
-        for y in grid_lines:
+        for y in grid_positions:
             self.ax.axhline(y, color='gray', alpha=0.3, linewidth=0.5)
         
-        # Set ticks at grid line positions
-        self.ax.set_xticks(grid_lines)
-        self.ax.set_yticks(grid_lines)
+        # Set ticks at cell boundary positions
+        self.ax.set_xticks(grid_positions)
+        self.ax.set_yticks(grid_positions)
         
         # Update titles and labels
         sim_time = getattr(self, 'heatmap_metadata', {}).get('sim_time', 'Unknown')
@@ -240,8 +262,17 @@ class LiveHeatmapFoodViewer:
             total_visits = np.sum(self.grid_data)
             visited_cells = np.count_nonzero(self.grid_data)
             total_cells = self.grid_data.size
+            cell_size = getattr(self, 'heatmap_metadata', {}).get('cell_size', 'Unknown')
             
-            stats_text = f'Max visits: {max_visits:.0f}\n'
+            # Calculate actual cell dimensions from C++ grid system
+            arena_width = 8.0  # meters
+            nominal_cell_size = 0.75
+            num_cells = int(np.ceil(arena_width / nominal_cell_size))  # 11 cells
+            actual_cell_size = arena_width / num_cells  # 8/11 ≈ 0.727m
+            
+            stats_text = f'Grid: {num_cells}x{num_cells} cells\n'
+            stats_text += f'Cell size: {actual_cell_size:.3f}m\n'
+            stats_text += f'Max visits: {max_visits:.0f}\n'
             stats_text += f'Total visits: {total_visits:.0f}\n'
             stats_text += f'Visited cells: {visited_cells}/{total_cells}\n'
             

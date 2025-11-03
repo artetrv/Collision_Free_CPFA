@@ -7,6 +7,8 @@ CPFA_controller::CPFA_controller() :
 	isHoldingFood(false),
 	isUsingSiteFidelity(false),
 	isGivingUpSearch(false),
+	isFollowingRandomTarget(false),
+	randomTargetSearchTime(0),
 	ResourceDensity(0),
 	MaxTrailSize(50),
 	SearchTime(0),
@@ -111,11 +113,13 @@ void CPFA_controller::ControlStep() {
 	// argos::LOG << "Robot " << controllerID << " state: " << GetStatus() << std::endl;
 
 	// Periodic location storage every 5 seconds - only during random search and only in enhanced mode
+	// Robot memory logging begins only after spiral search is complete
 	if(
-	   curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && 
+	   curr_time_in_seconds - lastMemoryStorageTime >= 5.0 && 
 	   !isHoldingFood && 
 	   !isInformed && 
-	   CPFA_state == SEARCHING
+	   CPFA_state == SEARCHING &&
+	   !isUsingSpiralSearch
 	) {
 		argos::CVector2 currentPosition = GetPosition();
 		
@@ -124,7 +128,7 @@ void CPFA_controller::ControlStep() {
 		// argos::LOG << "Robot " << controllerID << " (Enhanced) storing position: " << currentPosition << std::endl;
 		// Maintain sliding window of maximum 5 locations
 		if(robotMemory.size() > 5) {
-			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry (most efficient for vector)
+			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry
 		}
 		
 		// Update the last storage time
@@ -146,12 +150,12 @@ void CPFA_controller::ControlStep() {
 		// previous_position = GetPosition();
 		// last_time_in_seconds = curr_time_in_seconds;
 		
-		// Record position for trajectory if tracking is active
-		if(isRecordingTrajectory) {
-			currentTrajectory.push_back(GetPosition());
-		}
+		// // Record position for trajectory if tracking is active
+		// if(isRecordingTrajectory) {
+		// 	currentTrajectory.push_back(GetPosition());
+		// }
 		
-		last_time_in_seconds = curr_time_in_seconds;
+		// last_time_in_seconds = curr_time_in_seconds;
      }
 	//UpdateTargetRayList();
 	CPFA();
@@ -174,6 +178,16 @@ void CPFA_controller::Reset() {
     // Reset trajectory tracking
     currentTrajectory.clear();
     isRecordingTrajectory = false;
+    
+    // Reset spiral search locations
+    spiralSearchLocations.clear();
+    visitedSpiralLocations.clear();
+    currentSpiralIndex = 0;
+    isUsingSpiralSearch = false;
+    
+    // Reset random target tracking
+    isFollowingRandomTarget = false;
+    randomTargetSearchTime = 0;
     
   	LoopFunctions->CollisionTime=0; //qilu 09/26/2016
     
@@ -414,9 +428,9 @@ void CPFA_controller::Searching() {
        
        argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
        
-       if(distance.SquareLength() < tolerance) {
+	if((!nearWall && IsAtTarget()) || (nearWall && distance.Length() < tolerance)) {
          // randomly give up searching
-         if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest) {
+         if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest && !isUsingSpiralSearch) {
              
              SetFidelityList();
 	         TrailToShare.clear();
@@ -429,6 +443,10 @@ void CPFA_controller::Searching() {
              CPFA_state = RETURNING;
              searchingTime+=SimulationTick()-startTime;
              startTime = SimulationTick();
+
+             // Reset spiral search when giving up
+             isUsingSpiralSearch = false;
+             currentSpiralIndex = 0;
 
              // Stop trajectory recording and export if we were recording
              if(isRecordingTrajectory) {
@@ -452,37 +470,72 @@ void CPFA_controller::Searching() {
 
          // uninformed search
          if(isInformed == false) {
-          argos::CRadians rotation(rand);
-          argos::CRadians angle1(rotation);
-          argos::CRadians angle2(GetHeading());
-          argos::CRadians turn_angle(angle1 + angle2);
-          argos::CVector2 turn_vector(SearchStepSize, turn_angle);
-      
-          //argos::LOG << "UNINFORMED SEARCH: rotation: " << angle1 << std::endl;
-          //argos::LOG << "UNINFORMED SEARCH: old heading: " << angle2 << std::endl;
-      
-          /*
-          ofstream log_output_stream;
-          log_output_stream.open("uninformed_angle1.log", ios::app);
-          log_output_stream << angle1.GetValue() << endl;
-          log_output_stream.close();
-      
-          log_output_stream.open("uninformed_angle2.log", ios::app);
-          log_output_stream << angle2.GetValue() << endl;
-          log_output_stream.close();
-      
-          log_output_stream.open("uninformed_turning_angle.log", ios::app);
-          log_output_stream << turn_angle.GetValue() << endl;
-          log_output_stream.close();
-          */
-          SetIsHeadingToNest(false);
-          SetTarget(turn_vector + GetPosition());
+          // Check if we have spiral locations to explore
+          if(isUsingSpiralSearch && !spiralSearchLocations.empty()) {
+				// argos::LOG << "Robot " << controllerID << " reached spiral location: " << GetTarget() << std::endl;
+				
+				// Store the visited spiral location to be sent when returning to nest
+
+				//skip if its the first iteration. im not sure why but it always add the first location twice so we skip the first time to avoid false visits.
+				if(currentSpiralIndex > 0) {
+					visitedSpiralLocations.push_back(GetTarget());
+				}
+              
+              // If we've visited all spiral locations, disable spiral search and continue with normal random search
+              if(currentSpiralIndex >= spiralSearchLocations.size()) {
+                  isUsingSpiralSearch = false;
+                  currentSpiralIndex = 0;
+                  
+                  // Generate normal random search movement
+                  argos::CRadians rotation(rand);
+                  argos::CRadians angle1(rotation);
+                  argos::CRadians angle2(GetHeading());
+                  argos::CRadians turn_angle(angle1 + angle2);
+                  argos::CVector2 turn_vector(SearchStepSize, turn_angle);
+                  SetIsHeadingToNest(false);
+                  SetTarget(turn_vector + GetPosition());
+              } else {
+                  // Set target to the next spiral location
+                  SetIsHeadingToNest(false);
+                  SetTarget(spiralSearchLocations[currentSpiralIndex]);
+                //   argos::LOG << "Robot " << controllerID << " moving to spiral location " << currentSpiralIndex << ": " << spiralSearchLocations[currentSpiralIndex] << std::endl;
+				  // Move to the next spiral location
+				  currentSpiralIndex++;
+              }
+          } else {
+              // Normal uninformed search behavior
+              argos::CRadians rotation(rand);
+              argos::CRadians angle1(rotation);
+              argos::CRadians angle2(GetHeading());
+              argos::CRadians turn_angle(angle1 + angle2);
+              argos::CVector2 turn_vector(SearchStepSize, turn_angle);
+          
+              //argos::LOG << "UNINFORMED SEARCH: rotation: " << angle1 << std::endl;
+              //argos::LOG << "UNINFORMED SEARCH: old heading: " << angle2 << std::endl;
+          
+              /*
+              ofstream log_output_stream;
+              log_output_stream.open("uninformed_angle1.log", ios::app);
+              log_output_stream << angle1.GetValue() << endl;
+              log_output_stream.close();
+          
+              log_output_stream.open("uninformed_angle2.log", ios::app);
+              log_output_stream << angle2.GetValue() << endl;
+              log_output_stream.close();
+          
+              log_output_stream.open("uninformed_turning_angle.log", ios::app);
+              log_output_stream << turn_angle.GetValue() << endl;
+              log_output_stream.close();
+              */
+              SetIsHeadingToNest(false);
+              SetTarget(turn_vector + GetPosition());
+          }
          }
          // informed search
          else{
           
               SetIsHeadingToNest(false);
-              argos::LOG << "Robot: " << GetId() << " - INFORMED SEARCH: Reached target location. " << std::endl;
+            //   argos::LOG << "Robot: " << GetId() << " - INFORMED SEARCH: Reached target location. " << std::endl;
             //   if(IsAtTarget()) {
                   size_t          t           = SearchTime++;
                   argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
@@ -589,17 +642,28 @@ void CPFA_controller::Returning() {
 		/* LOGIC TO SEND LAST 5 LOCATIONS TO CENTRAL CONTROLLER */
 		// if(SearchAlgorithmMode == 1 && !robotMemory.empty()) {
 		if(!robotMemory.empty()) {
-			argos::LOG << "Robot " << controllerID << " returning to nest with " 
-					   << robotMemory.size() << " stored locations:" << std::endl;
+			// argos::LOG << "Robot " << controllerID << " returning to nest with " 
+			// 		   << robotMemory.size() << " stored locations:" << std::endl;
 			
-			for(size_t i = 0; i < robotMemory.size(); i++) {
-				argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
-			}
+			// for(size_t i = 0; i < robotMemory.size(); i++) {
+			// 	argos::LOG << "  Location " << (i+1) << ": " << robotMemory[i] << std::endl;
+			// }
 			
 			// Send locations to the central controller to update the grid
 			LoopFunctions->receiveRobotMemory(controllerID, robotMemory);
 			
 			robotMemory.clear();
+		}
+
+		// Send visited spiral locations to update the grid map
+		if(!visitedSpiralLocations.empty()) {
+			// argos::LOG << "Robot " << controllerID << " returning to nest with " 
+			// 		   << visitedSpiralLocations.size() << " visited spiral locations" << std::endl;
+			
+			// Send spiral locations to the central controller to update the grid
+			LoopFunctions->receiveRobotMemory(controllerID, visitedSpiralLocations);
+			
+			visitedSpiralLocations.clear();
 		}
 
 		// Based on a Poisson CDF, the robot may or may not create a pheromone
@@ -700,7 +764,8 @@ void CPFA_controller::Returning() {
 	    
     }		
 }
-	
+
+// This setrandomsearchlocation function is set to randomly sample 5 cells and probabilistically select one based on visit counts
 void CPFA_controller::SetRandomSearchLocation() {
     // Set LEDs to red to indicate random search mode
     m_pcLEDs->SetAllColors(CColor::RED);
@@ -719,7 +784,23 @@ void CPFA_controller::SetRandomSearchLocation() {
             x = RNG->Uniform(ForageRangeX);
             y = RNG->Uniform(ForageRangeY);
             candidates[i] = argos::CVector2(x, y);
-            visitCounts[i] = LoopFunctions->getGridVisitCount(candidates[i]);
+            
+            // OLD LOGIC: Calculate visit count for individual cell only
+            // visitCounts[i] = LoopFunctions->getGridVisitCount(candidates[i]);
+            
+            // NEW LOGIC: Calculate visit count for area (cell + immediate neighbors)
+            int areaVisitCount = 0;
+            argos::Real cellSize = 0.25; // 0.75 meters grid cell size (3x3 of original 0.25m cells)
+            
+            // Check the 8 immediate neighbors plus the center cell (3x3 area)
+            for(int dx = -1; dx <= 1; dx++) {
+                for(int dy = -1; dy <= 1; dy++) {
+                    argos::CVector2 neighborPos = candidates[i] + argos::CVector2(dx * cellSize, dy * cellSize);
+                    areaVisitCount += LoopFunctions->getGridVisitCount(neighborPos);
+                }
+            }
+            
+            visitCounts[i] = areaVisitCount;
         }
         
         // Find cells with visit count of 0
@@ -736,7 +817,7 @@ void CPFA_controller::SetRandomSearchLocation() {
             // If we have zero visit count cells, select randomly among them
             int randomZeroIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, zeroIndices.size()));
             selectedIndex = zeroIndices[randomZeroIndex];
-            // argos::LOG << "Robot " << controllerID << " selected unvisited location from " << zeroIndices.size() << " unvisited candidates" << std::endl;
+            // argos::LOG << "Robot " << controllerID << " selected unvisited area from " << zeroIndices.size() << " unvisited area candidates" << std::endl;
         } else {
             // No zero visit counts, use weighted selection based on 1/visitCount
             std::vector<argos::Real> weights(numSamples);
@@ -760,7 +841,7 @@ void CPFA_controller::SetRandomSearchLocation() {
                 }
             }
             
-            // argos::LOG << "Robot " << controllerID << " selected location using weighted selection with visit count " << visitCounts[selectedIndex] << std::endl;
+            argos::LOG << "Robot " << controllerID << " selected location using weighted selection with area visit count " << visitCounts[selectedIndex] << std::endl;
         }
         
         candidateTarget = candidates[selectedIndex];
@@ -771,9 +852,35 @@ void CPFA_controller::SetRandomSearchLocation() {
         candidateTarget = argos::CVector2(x, y);
     }
         
+    // Generate spiral search locations only for enhanced mode (SearchAlgorithmMode == 1)
+    spiralSearchLocations.clear();
+    currentSpiralIndex = 0;
+    isUsingSpiralSearch = false;
+    
+    if(SearchAlgorithmMode == 1) {
+        argos::Real cellSize = 0.25; // 0.75 meters (3x3 of original 0.25m cells)
+        
+        // Extended spiral pattern: center, right, up-right, up, up-left, left, down-left, down
+        spiralSearchLocations.push_back(candidateTarget); // Location 0: center (original target)
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(cellSize, 0.0)); // Location 1: right
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(cellSize, cellSize)); // Location 2: up-right
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(0.0, cellSize)); // Location 3: up
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-cellSize, cellSize)); // Location 4: up-left
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-cellSize, 0.0)); // Location 5: left
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-cellSize, -cellSize)); // Location 6: down-left
+        spiralSearchLocations.push_back(candidateTarget + argos::CVector2(0.0, -cellSize)); // Location 7: down
+        
+        // Initialize spiral search tracking for enhanced mode only
+        isUsingSpiralSearch = true;
+    }
+    
     SetIsHeadingToNest(true); // Turn off error for this
     SetTarget(candidateTarget);
     targetFromRandomSearch = candidateTarget;
+    
+    // Set flag to indicate we're following a random target
+    isFollowingRandomTarget = true;
+    randomTargetSearchTime = 0;
     
     // Start trajectory recording
     currentTrajectory.clear();
@@ -782,6 +889,110 @@ void CPFA_controller::SetRandomSearchLocation() {
     
     // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
 }
+
+// This setrandomsearchlocation uses full grid scanning to find the least visited cell
+// void CPFA_controller::SetRandomSearchLocation() {
+//     m_pcLEDs->SetAllColors(CColor::RED);
+    
+//     argos::Real x = 0.0, y = 0.0;
+//     argos::CVector2 candidateTarget;
+    
+//     // Apply enhanced algorithm with full grid scanning if mode is 1 (enhanced)
+//     if(SearchAlgorithmMode == 1) {
+//         // Get grid parameters dynamically from loop functions
+//         const size_t gridWidth = LoopFunctions->GridWidth;
+//         const size_t gridHeight = LoopFunctions->GridHeight;
+//         const argos::Real arenaWidth = ForageRangeX.GetMax() - ForageRangeX.GetMin();
+//         const argos::Real arenaHeight = ForageRangeY.GetMax() - ForageRangeY.GetMin();
+//         const argos::Real cellSizeX = arenaWidth / gridWidth;
+//         const argos::Real cellSizeY = arenaHeight / gridHeight;
+        
+//         std::vector<argos::CVector2> minVisitCells;
+//         int minVisitCount = INT_MAX;
+        
+//         // Scan entire grid to find cells with minimum visit count
+//         // This is O(gridWidth × gridHeight)
+//         for(size_t i = 0; i < gridWidth; i++) {
+//             for(size_t j = 0; j < gridHeight; j++) {
+//                 // Convert grid indices to world coordinates (center of each cell)
+//                 argos::Real worldX = ForageRangeX.GetMin() + (i + 0.5) * cellSizeX;
+//                 argos::Real worldY = ForageRangeY.GetMin() + (j + 0.5) * cellSizeY;
+//                 argos::CVector2 cellCenter(worldX, worldY);
+                
+//                 // Get visit count for this cell
+//                 int visitCount = LoopFunctions->getGridVisitCount(cellCenter);
+                
+//                 if(visitCount < minVisitCount) {
+//                     // Found new minimum - clear list and add this cell
+//                     minVisitCount = visitCount;
+//                     minVisitCells.clear();
+//                     minVisitCells.push_back(cellCenter);
+//                 } else if(visitCount == minVisitCount) {
+//                     // Found another cell with same minimum count - add to list
+//                     minVisitCells.push_back(cellCenter);
+//                 }
+//             }
+//         }
+        
+//         // Randomly select from cells with minimum visit count
+//         if(!minVisitCells.empty()) {
+//             int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, minVisitCells.size()));
+//             candidateTarget = minVisitCells[randomIndex];
+            
+//             argos::LOG << "Robot " << controllerID << " selected cell with minimum visit count " 
+//                       << minVisitCount << " from " << minVisitCells.size() 
+//                       << " equally minimal cells" << std::endl;
+//         } else {
+//             // Fallback to random selection (shouldn't happen)
+//             x = RNG->Uniform(ForageRangeX);
+//             y = RNG->Uniform(ForageRangeY);
+//             candidateTarget = argos::CVector2(x, y);
+//         }
+        
+//         // Generate spiral search locations for enhanced mode
+//         spiralSearchLocations.clear();
+//         currentSpiralIndex = 0;
+//         isUsingSpiralSearch = true;
+        
+//         // Use average cell size for spiral pattern (in case grid is not square)
+//         // argos::Real avgCellSize = (cellSizeX + cellSizeY) / 2.0;
+//         argos::Real avgCellSize = 0.25;
+//         // Extended spiral pattern: center, right, up-right, up, up-left, left, down-left, down
+//         spiralSearchLocations.push_back(candidateTarget); // Location 0: center (original target)
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(avgCellSize, 0.0)); // Location 1: right
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(avgCellSize, avgCellSize)); // Location 2: up-right
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(0.0, avgCellSize)); // Location 3: up
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-avgCellSize, avgCellSize)); // Location 4: up-left
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-avgCellSize, 0.0)); // Location 5: left
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-avgCellSize, -avgCellSize)); // Location 6: down-left
+//         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(0.0, -avgCellSize)); // Location 7: down
+        
+//     } else {
+//         // For SearchAlgorithmMode == 0 (baseline), use simple random generation
+//         spiralSearchLocations.clear();
+//         currentSpiralIndex = 0;
+//         isUsingSpiralSearch = false;
+        
+//         x = RNG->Uniform(ForageRangeX);
+//         y = RNG->Uniform(ForageRangeY);
+//         candidateTarget = argos::CVector2(x, y);
+//     }
+    
+//     SetIsHeadingToNest(true); // Turn off error for this
+//     SetTarget(candidateTarget);
+//     targetFromRandomSearch = candidateTarget;
+    
+//     // Set flag to indicate we're following a random target
+//     isFollowingRandomTarget = true;
+//     randomTargetSearchTime = 0;
+    
+//     // Start trajectory recording
+//     currentTrajectory.clear();
+//     isRecordingTrajectory = true;
+//     currentTrajectory.push_back(GetPosition()); // Record starting position
+    
+//     // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
+// }
 
 /*****
  * Check if the iAnt is finding food. This is defined as the iAnt being within
@@ -809,6 +1020,10 @@ void CPFA_controller::SetHoldingFood() {
 					 j = i + 1;
 					 searchingTime+=SimulationTick()-startTime;
 					 startTime = SimulationTick();
+					 
+					 // Reset spiral search when food is found
+					 isUsingSpiralSearch = false;
+					 currentSpiralIndex = 0;
 					 
 				   //distribute a new food 
 			       /*  argos::CVector2 placementPosition;
