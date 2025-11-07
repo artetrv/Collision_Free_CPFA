@@ -354,8 +354,8 @@ void CPFA_controller::Departing()
                        target.GetY() < ForageRangeY.GetMin() + wallBuffer);
        
        argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
-    //    if(SimulationTick()%(5*SimulationTicksPerSecond())==0 && randomNumber < LoopFunctions->ProbabilityOfSwitchingToSearching){
-	       if(distanceToTarget < tolerance){		
+	   if(SearchAlgorithmMode == 1){
+	       if(distanceToTarget < TargetDistanceTolerance){
 			 //LOG<<"Switch to search..."<<endl;
                  Stop();
                  SearchTime = 0;
@@ -374,12 +374,33 @@ void CPFA_controller::Departing()
                  SetTarget(turn_vector + GetPosition());
 				//  argos::LOG << "Robot " << controllerID << " is switching to SEARCHING state" << std::endl;
 		   }
-		//    else if(distanceToTarget < tolerance){
-		// 	 SetRandomSearchLocation();
-		// 	//  argos::LOG << "Reached target, setting new random search location: " << GetTarget() << " at tick: " << SimulationTick() << std::endl;
-		//    }
+	   }else{ // original CPFA
+			if(SimulationTick()%(5*SimulationTicksPerSecond())==0 && randomNumber < LoopFunctions->ProbabilityOfSwitchingToSearching){
+					//LOG<<"Switch to search..."<<endl;
+						Stop();
+						SearchTime = 0;
+						CPFA_state = SEARCHING;
+						travelingTime+=SimulationTick()-startTime;//qilu 10/22
+						startTime = SimulationTick();//qilu 10/22
+					
+						argos::Real USV = LoopFunctions->UninformedSearchVariation.GetValue();
+						argos::Real rand = RNG->Gaussian(USV);
+						argos::CRadians rotation(rand);
+						argos::CRadians angle1(rotation.UnsignedNormalize());
+						argos::CRadians angle2(GetHeading().UnsignedNormalize());
+						argos::CRadians turn_angle(angle1 + angle2);
+						argos::CVector2 turn_vector(SearchStepSize, turn_angle);
+						SetIsHeadingToNest(false);
+						SetTarget(turn_vector + GetPosition());
+						//  argos::LOG << "Robot " << controllerID << " is switching to SEARCHING state" << std::endl;
+				}
+				else if(distanceToTarget < TargetDistanceTolerance){
+					SetRandomSearchLocation();
+					//  argos::LOG << "Reached target, setting new random search location: " << GetTarget() << " at tick: " << SimulationTick() << std::endl;
+				}
 	   }
 	 } 
+	} 
 		 
      /* Are we informed? I.E. using site fidelity or pheromones. */	
      if(isInformed && distanceToTarget < TargetDistanceTolerance) {
@@ -428,7 +449,8 @@ void CPFA_controller::Searching() {
        
        argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
        
-	if((!nearWall && IsAtTarget()) || (nearWall && distance.Length() < tolerance)) {
+	// if((!nearWall && IsAtTarget()) || (nearWall && distance.Length() < tolerance)) {
+	if(distance.SquareLength() < TargetDistanceTolerance) {
          // randomly give up searching
          if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest && !isUsingSpiralSearch) {
              
@@ -536,7 +558,7 @@ void CPFA_controller::Searching() {
           
               SetIsHeadingToNest(false);
             //   argos::LOG << "Robot: " << GetId() << " - INFORMED SEARCH: Reached target location. " << std::endl;
-            //   if(IsAtTarget()) {
+              if(IsAtTarget()) {
                   size_t          t           = SearchTime++;
                   argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
                   argos::Real     pi          = (argos::CRadians::PI).GetValue();
@@ -570,7 +592,7 @@ void CPFA_controller::Searching() {
                   log_output_stream.close();
                   */
                   SetTarget(turn_vector + GetPosition());
-            //   }
+              }
          }
 	  } //not reach the target location
 	  else {
@@ -974,29 +996,48 @@ void CPFA_controller::SetRandomSearchLocation() {
         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(-avgCellSize, -avgCellSize)); // Location 6: down-left
         spiralSearchLocations.push_back(candidateTarget + argos::CVector2(0.0, -avgCellSize)); // Location 7: down
         
+		SetIsHeadingToNest(true); // Turn off error for this
+		SetTarget(candidateTarget);
+		targetFromRandomSearch = candidateTarget;
+		
+		// Set flag to indicate we're following a random target
+		isFollowingRandomTarget = true;
+		randomTargetSearchTime = 0;
+		
+		// Start trajectory recording
+		currentTrajectory.clear();
+		isRecordingTrajectory = true;
+		currentTrajectory.push_back(GetPosition()); // Record starting position 
     } else {
-        // For SearchAlgorithmMode == 0 (baseline), use simple random generation
-        spiralSearchLocations.clear();
-        currentSpiralIndex = 0;
-        isUsingSpiralSearch = false;
-        
-        x = RNG->Uniform(ForageRangeX);
-        y = RNG->Uniform(ForageRangeY);
-        candidateTarget = argos::CVector2(x, y);
+		argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
+		argos::Real x = 0.0, y = 0.0;
+
+		/* north wall */
+		if(random_wall < 0.25) {
+			x = RNG->Uniform(ForageRangeX);
+			y = ForageRangeY.GetMax();
+		}
+		/* south wall */
+		else if(random_wall < 0.5) {
+			x = RNG->Uniform(ForageRangeX);
+			y = ForageRangeY.GetMin();
+		}
+		/* east wall */
+		else if(random_wall < 0.75) {
+			x = ForageRangeX.GetMax();
+			y = RNG->Uniform(ForageRangeY);
+		}
+		/* west wall */
+		else {
+			x = ForageRangeX.GetMin();
+			y = RNG->Uniform(ForageRangeY);
+		}
+			
+		SetIsHeadingToNest(true); // Turn off error for this
+		SetTarget(argos::CVector2(x, y));
     }
     
-    SetIsHeadingToNest(true); // Turn off error for this
-    SetTarget(candidateTarget);
-    targetFromRandomSearch = candidateTarget;
-    
-    // Set flag to indicate we're following a random target
-    isFollowingRandomTarget = true;
-    randomTargetSearchTime = 0;
-    
-    // Start trajectory recording
-    currentTrajectory.clear();
-    isRecordingTrajectory = true;
-    currentTrajectory.push_back(GetPosition()); // Record starting position
+
     
     // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
 }
