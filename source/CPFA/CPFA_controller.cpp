@@ -115,6 +115,7 @@ void CPFA_controller::ControlStep() {
 	// Periodic location storage every 5 seconds - only during random search and only in enhanced mode
 	// Robot memory logging begins only after spiral search is complete
 	if(
+		SearchAlgorithmMode == 1 &&
 	   curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && 
 	   !isHoldingFood && 
 	   !isInformed && 
@@ -871,21 +872,6 @@ void CPFA_controller::Returning() {
 //         // Immediately increment the visit count for the selected cell
 //         std::vector<argos::CVector2> selectedLocation = {candidateTarget};
 //         LoopFunctions->receiveRobotMemory(controllerID, selectedLocation);
-        
-//     } else {
-//         // For SearchAlgorithmMode == 0 (baseline), use simple random generation
-//         x = RNG->Uniform(ForageRangeX);
-//         y = RNG->Uniform(ForageRangeY);
-//         candidateTarget = argos::CVector2(x, y);
-        
-//     }
-        
-//     // Generate spiral search locations only for enhanced mode (SearchAlgorithmMode == 1)
-//     spiralSearchLocations.clear();
-//     currentSpiralIndex = 0;
-//     isUsingSpiralSearch = false;
-    
-//     if(SearchAlgorithmMode == 1) {
 //         argos::Real cellSize = 0.25; // 0.75 meters (3x3 of original 0.25m cells)
         
 //         // Extended spiral pattern: center, right, up-right, up, up-left, left, down-left, down
@@ -900,22 +886,52 @@ void CPFA_controller::Returning() {
         
 //         // Initialize spiral search tracking for enhanced mode only
 //         isUsingSpiralSearch = true;
+// 		SetIsHeadingToNest(true); // Turn off error for this
+// 		SetTarget(candidateTarget);
+// 		targetFromRandomSearch = candidateTarget;
+		
+// 		// Set flag to indicate we're following a random target
+// 		isFollowingRandomTarget = true;
+// 		randomTargetSearchTime = 0;
+		
+// 		// Start trajectory recording
+// 		currentTrajectory.clear();
+// 		isRecordingTrajectory = true;
+// 		currentTrajectory.push_back(GetPosition()); // Record starting position
+		
+// 		// argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;        
+//     } else {
+// 		isUsingSpiralSearch = false;
+// 		argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
+// 		argos::Real x = 0.0, y = 0.0;
+
+// 		/* north wall */
+// 		if(random_wall < 0.25) {
+// 			x = RNG->Uniform(ForageRangeX);
+// 			y = ForageRangeY.GetMax();
+// 		}
+// 		/* south wall */
+// 		else if(random_wall < 0.5) {
+// 			x = RNG->Uniform(ForageRangeX);
+// 			y = ForageRangeY.GetMin();
+// 		}
+// 		/* east wall */
+// 		else if(random_wall < 0.75) {
+// 			x = ForageRangeX.GetMax();
+// 			y = RNG->Uniform(ForageRangeY);
+// 		}
+// 		/* west wall */
+// 		else {
+// 			x = ForageRangeX.GetMin();
+// 			y = RNG->Uniform(ForageRangeY);
+// 		}
+			
+// 		SetIsHeadingToNest(true); // Turn off error for this
+// 		SetTarget(argos::CVector2(x, y));
+        
 //     }
     
-//     SetIsHeadingToNest(true); // Turn off error for this
-//     SetTarget(candidateTarget);
-//     targetFromRandomSearch = candidateTarget;
-    
-//     // Set flag to indicate we're following a random target
-//     isFollowingRandomTarget = true;
-//     randomTargetSearchTime = 0;
-    
-//     // Start trajectory recording
-//     currentTrajectory.clear();
-//     isRecordingTrajectory = true;
-//     currentTrajectory.push_back(GetPosition()); // Record starting position
-    
-//     // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
+
 // }
 
 // This setrandomsearchlocation uses full grid scanning to find the least visited cell
@@ -1036,8 +1052,6 @@ void CPFA_controller::SetRandomSearchLocation() {
 		SetIsHeadingToNest(true); // Turn off error for this
 		SetTarget(argos::CVector2(x, y));
     }
-    
-
     
     // argos::LOG << "Robot " << controllerID << " setting random search target: " << candidateTarget << std::endl;
 }
