@@ -115,7 +115,7 @@ void CPFA_controller::ControlStep() {
 	// Periodic location storage every 5 seconds - only during random search and only in enhanced mode
 	// Robot memory logging begins only after spiral search is complete
 	if(
-	   curr_time_in_seconds - lastMemoryStorageTime >= 5.0 && 
+	   curr_time_in_seconds - lastMemoryStorageTime >= 10.0 && 
 	   !isHoldingFood && 
 	   !isInformed && 
 	   CPFA_state == SEARCHING &&
@@ -775,7 +775,7 @@ void CPFA_controller::Returning() {
     
 //     // Apply enhanced algorithm with sampling if mode is 1 (enhanced)
 //     if(SearchAlgorithmMode == 1) {
-//         const int numSamples = 5;
+//         const int numSamples = 121;
 //         std::vector<argos::CVector2> candidates(numSamples);
 //         std::vector<int> visitCounts(numSamples);
         
@@ -786,21 +786,21 @@ void CPFA_controller::Returning() {
 //             candidates[i] = argos::CVector2(x, y);
             
 //             // OLD LOGIC: Calculate visit count for individual cell only
-//             // visitCounts[i] = LoopFunctions->getGridVisitCount(candidates[i]);
+//             visitCounts[i] = LoopFunctions->getGridVisitCount(candidates[i]);
             
 //             // NEW LOGIC: Calculate visit count for area (cell + immediate neighbors)
-//             int areaVisitCount = 0;
-//             argos::Real cellSize = 0.25; // 0.75 meters grid cell size (3x3 of original 0.25m cells)
+//             // int areaVisitCount = 0;
+//             // argos::Real cellSize = 0.25; // 0.75 meters grid cell size (3x3 of original 0.25m cells)
             
-//             // Check the 8 immediate neighbors plus the center cell (3x3 area)
-//             for(int dx = -1; dx <= 1; dx++) {
-//                 for(int dy = -1; dy <= 1; dy++) {
-//                     argos::CVector2 neighborPos = candidates[i] + argos::CVector2(dx * cellSize, dy * cellSize);
-//                     areaVisitCount += LoopFunctions->getGridVisitCount(neighborPos);
-//                 }
-//             }
+//             // // Check the 8 immediate neighbors plus the center cell (3x3 area)
+//             // for(int dx = -1; dx <= 1; dx++) {
+//             //     for(int dy = -1; dy <= 1; dy++) {
+//             //         argos::CVector2 neighborPos = candidates[i] + argos::CVector2(dx * cellSize, dy * cellSize);
+//             //         areaVisitCount += LoopFunctions->getGridVisitCount(neighborPos);
+//             //     }
+//             // }
             
-//             visitCounts[i] = areaVisitCount;
+//             // visitCounts[i] = areaVisitCount;
 //         }
         
 //         // Find cells with visit count of 0
@@ -845,11 +845,17 @@ void CPFA_controller::Returning() {
 //         }
         
 //         candidateTarget = candidates[selectedIndex];
+        
+//         // Immediately increment the visit count for the selected cell
+//         std::vector<argos::CVector2> selectedLocation = {candidateTarget};
+//         LoopFunctions->receiveRobotMemory(controllerID, selectedLocation);
+        
 //     } else {
 //         // For SearchAlgorithmMode == 0 (baseline), use simple random generation
 //         x = RNG->Uniform(ForageRangeX);
 //         y = RNG->Uniform(ForageRangeY);
 //         candidateTarget = argos::CVector2(x, y);
+        
 //     }
         
 //     // Generate spiral search locations only for enhanced mode (SearchAlgorithmMode == 1)
@@ -938,7 +944,8 @@ void CPFA_controller::SetRandomSearchLocation() {
         if(!minVisitCells.empty()) {
             int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, minVisitCells.size()));
             candidateTarget = minVisitCells[randomIndex];
-            
+        	std::vector<argos::CVector2> selectedLocation = {candidateTarget};
+        	LoopFunctions->receiveRobotMemory(controllerID, selectedLocation);            
             argos::LOG << "Robot " << controllerID << " selected cell with minimum visit count " 
                       << minVisitCount << " from " << minVisitCells.size() 
                       << " equally minimal cells" << std::endl;
