@@ -30,6 +30,7 @@ class CPFA_qt_user_functions : public argos::CQTOpenGLUserFunctions {
 		void DrawFidelity();
 		void DrawPheromones();
 		void DrawTargetRays();
+		void DrawGrid();
 		
 		CPFA_loop_functions& loopFunctions;
  
