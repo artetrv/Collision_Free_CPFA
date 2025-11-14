@@ -71,6 +71,16 @@ class CPFA_controller : public BaseController {
 
     // ===== Congestion detection (sliding-window tortuosity) END =====
 
+	    // ===== Perpendicular zone restriction after congestion drop =====
+    bool          hasRestrictedZone;  // true if this robot must stay in its local quadrant
+    argos::CVector2 zoneOrigin;       // (x,y) where the red X/Y lines cross (drop position)
+    argos::Real   zoneXMin;          // allowed global X range
+    argos::Real   zoneXMax;
+    argos::Real   zoneYMin;          // allowed global Y range
+    argos::Real   zoneYMax;
+    // ================================================================
+
+
   string 			controllerID;//qilu 07/26/2016
 
 		CPFA_loop_functions* LoopFunctions;

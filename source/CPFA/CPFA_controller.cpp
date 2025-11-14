@@ -1,5 +1,6 @@
 #include "CPFA_controller.h"
 #include <unistd.h>
+#include <algorithm> // for std::max, std::min, std::swap
 
 CPFA_controller::CPFA_controller() :
 	RNG(argos::CRandom::CreateRNG("argos")),
@@ -32,7 +33,13 @@ CPFA_controller::CPFA_controller() :
    sum_window_segments(0.0),
     sw_LastCongSampleTick(0),
     sw_badSample_counter(0),
-    InCongested(false)
+    InCongested(false),
+	hasRestrictedZone(false),
+    zoneOrigin(0.0f, 0.0f),
+    zoneXMin(0.0f),
+    zoneXMax(0.0f),
+    zoneYMin(0.0f),
+    zoneYMax(0.0f)
 {
 }
 
@@ -122,22 +129,22 @@ void CPFA_controller::ControlStep() {
 	// Add line so we can draw the trail
 	curr_time_in_seconds = (argos::Real)(SimulationTick() / SimulationTicksPerSecond()); 
      
-	// if(curr_time_in_seconds - last_time_in_seconds >= 0)
-	// {
-	// 	CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
+	if(curr_time_in_seconds - last_time_in_seconds >= 0)
+	{
+		CVector2 position2d(GetPosition().GetX(), GetPosition().GetY());
 		
-	// 	CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
-	// 	CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
-	// 	CRay3 targetRay(target3d, position3d);
-	// 	myTrail.push_back(targetRay);
-	// 	LoopFunctions->Trajectory[controllerID].push_back(position2d);
-	// 	//since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
-	// 	LoopFunctions->TargetRayList.push_back(targetRay);
-	// 	LoopFunctions->TargetRayColorList.push_back(TrailColor);
-	// 	//argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
-	// 	previous_position = GetPosition();
-	// 	last_time_in_seconds = curr_time_in_seconds;
-    //  }
+		CVector3 position3d(GetPosition().GetX(), GetPosition().GetY(), 0.00);
+		CVector3 target3d(previous_position.GetX(), previous_position.GetY(), 0.00);
+		CRay3 targetRay(target3d, position3d);
+		myTrail.push_back(targetRay);
+		LoopFunctions->Trajectory[controllerID].push_back(position2d);
+		//since it costs a lot of memeory, I commented it. qilu 06/2023. You can uncomment it if you want to show the trails.
+		LoopFunctions->TargetRayList.push_back(targetRay);
+		LoopFunctions->TargetRayColorList.push_back(TrailColor);
+		//argos::LOG<< "TargetRayList size =" << LoopFunctions->TargetRayList.size() <<endl;
+		previous_position = GetPosition();
+		last_time_in_seconds = curr_time_in_seconds;
+     }
 	//UpdateTargetRayList();
 	CPFA();
 	Move();
@@ -173,7 +180,16 @@ void CPFA_controller::Reset() {
 	Cong_ResetWindow();
 	InCongested = false;
 	cooldownUntilTick = 0;
+
+	// Reset any congestion-based zone restriction
+    hasRestrictedZone = false;
+	zoneOrigin.Set(0.0f, 0.0f);
+    zoneXMin = zoneXMax = 0.0f;
+    zoneYMin = zoneYMax = 0.0f;
 }
+
+
+
 
 bool CPFA_controller::IsHoldingFood() {
 		return isHoldingFood;
@@ -304,6 +320,16 @@ void CPFA_controller::Congested() {
 
     // 2) No longer carrying
     isHoldingFood = false;
+	// Save drop position for the wedge search
+    zoneOrigin = GetPosition();
+    hasRestrictedZone = true;
+
+
+    // Log with heading (useful!)
+    LOG << GetId()
+        << " CONGESTED drop at " << zoneOrigin
+        << " heading=" << GetHeading().GetValue()
+        << "\n";
 
     // 4) Switch to DEPARTING 
 		argos::Real poissonCDF_sFollowRate = GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfSiteFidelity);
@@ -733,7 +759,8 @@ void CPFA_controller::Returning() {
         InCongested = false;
         sw_badSample_counter = 0;
         // ----------------------------------------
-
+	  // Zone restriction only applies for this outbound trip; clear at nest
+        hasRestrictedZone = false;
                 
     } // end of In the nest
 	// Take a small step towards the nest so we don't overshoot by too much if we miss it
@@ -766,33 +793,110 @@ void CPFA_controller::Returning() {
 }
 	
 void CPFA_controller::SetRandomSearchLocation() {
-	argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-	argos::Real x = 0.0, y = 0.0;
+    argos::Real x = 0.0, y = 0.0;
+	if(hasRestrictedZone) {
+        argos::CVector2 P = zoneOrigin;         // drop point
 
-	/* north wall */
-	if(random_wall < 0.25) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMax();
-	}
-	/* south wall */
-	else if(random_wall < 0.5) {
-		x = RNG->Uniform(ForageRangeX);
-		y = ForageRangeY.GetMin();
-	}
-	/* east wall */
-	else if(random_wall < 0.75) {
-		x = ForageRangeX.GetMax();
-		y = RNG->Uniform(ForageRangeY);
-	}
-	/* west wall */
-	else {
-		x = ForageRangeX.GetMin();
-		y = RNG->Uniform(ForageRangeY);
-	}
-		
-	SetIsHeadingToNest(true); // Turn off error for this
-	SetTarget(argos::CVector2(x, y));
+        // robot's heading direction at drop
+        CRadians heading = GetHeading();
+
+        // compute two perpendicular boundary vectors
+        CRadians plus90  = heading + CRadians::PI_OVER_TWO;
+        CRadians minus90 = heading - CRadians::PI_OVER_TWO;
+
+        argos::CVector2 n1(std::cos(plus90.GetValue()),
+                           std::sin(plus90.GetValue()));
+        argos::CVector2 n2(std::cos(minus90.GetValue()),
+                           std::sin(minus90.GetValue()));
+
+		// ---------- NEW: check if the nest lies in this (default) wedge ----------
+        // Vector from drop point to nest center
+        argos::CVector2 vNest = LoopFunctions->NestPosition - P;
+
+        bool nestInWedge =
+            (vNest.DotProduct(n1) >= 0.0) &&
+            (vNest.DotProduct(n2) >= 0.0);
+
+        if(nestInWedge) {
+            // If the nest is inside the current (backward) wedge,
+            // flip the wedge 180° so we search on the opposite side.
+            n1 = -n1;
+            n2 = -n2;
+
+            LOG << GetId()
+                << " wedge FLIPPED to avoid nest; P=" << P
+                << " heading=" << heading.GetValue() << "\n";
+        } else {
+            LOG << GetId()
+                << " wedge kept (nest outside wedge); P=" << P
+                << " heading=" << heading.GetValue() << "\n";
+        }
+
+        argos::CVector2 candidate;
+        bool ok = false;
+
+        const size_t maxTries = 100;
+        for(size_t t = 0; t < maxTries; t++) {
+
+            // uniform random point in arena
+            candidate.Set(
+                RNG->Uniform(ForageRangeX),
+                RNG->Uniform(ForageRangeY)
+            );
+
+            argos::CVector2 v = candidate - P;
+
+            // The 90° region:
+            if(v.DotProduct(n1) >= 0.0 &&
+               v.DotProduct(n2) >= 0.0)
+            {
+                ok = true;
+                break;
+            }
+        }
+
+        if(!ok) candidate = P;
+
+        x = candidate.GetX();
+        y = candidate.GetY();
+
+        // LOG << GetId()
+        //     << " (restricted-90deg) target=(" << x << "," << y
+        //     << "), drop=" << P
+        //     << " heading=" << heading.GetValue()
+        //     << "\n";
+    } else {
+			argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
+
+        /* north wall */
+        if(random_wall < 0.25) {
+            x = RNG->Uniform(ForageRangeX);
+            y = ForageRangeY.GetMax();
+        }
+        /* south wall */
+        else if(random_wall < 0.5) {
+            x = RNG->Uniform(ForageRangeX);
+            y = ForageRangeY.GetMin();
+        }
+        /* east wall */
+        else if(random_wall < 0.75) {
+            x = ForageRangeX.GetMax();
+            y = RNG->Uniform(ForageRangeY);
+        }
+        /* west wall */
+        else {
+            x = ForageRangeX.GetMin();
+            y = RNG->Uniform(ForageRangeY);
+    }
+	// LOG << GetId()
+    //         << " (global) random search target at wall: ("
+    //         << x << ", " << y << ")\n";
 }
+
+    SetIsHeadingToNest(true); // Turn off error for this
+    SetTarget(argos::CVector2(x, y));
+}
+
 
 /*****
  * Check if the iAnt is finding food. This is defined as the iAnt being within
