@@ -152,6 +152,10 @@ class CPFA_controller : public BaseController {
 		unsigned int survey_count;
 		/* Pointer to the LEDs actuator */
         CCI_LEDsActuator* m_pcLEDs;
+
+		/* Restricted search zone after congestion */
+       bool hasRestrictedZone;
+       argos::Real zoneXMin, zoneXMax, zoneYMin, zoneYMax;
 };
 
 #endif /* CPFA_CONTROLLER_H */
