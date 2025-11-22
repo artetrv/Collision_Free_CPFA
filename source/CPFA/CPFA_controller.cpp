@@ -588,376 +588,6 @@ void CPFA_controller::Departing()
 }
 
 
-
-//old implementation->>>>
-// void CPFA_controller::Departing()
-// {
-//      //LOG<<"Departing..."<<endl;
-//     argos::Real distanceToTarget = (GetPosition() - GetTarget()).Length();
-//     argos::Real randomNumber = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-
-//     /*
-//     ofstream log_output_stream;
-//     log_output_stream.open("cpfa_log.txt", ios::app);
-//     log_output_stream << "Distance to target: " << distanceToTarget << endl;
-//     log_output_stream << "Current Position: " << GetPosition() << ", Target: " << GetTarget() << endl;
-//     log_output_stream.close();
-//     */
-// 	argos::CVector2 target = GetTarget();
-//        argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
-//        bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer ||
-//                        target.GetX() < ForageRangeX.GetMin() + wallBuffer ||
-//                        target.GetY() > ForageRangeY.GetMax() - wallBuffer ||
-//                        target.GetY() < ForageRangeY.GetMin() + wallBuffer);
-
-//        argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
-
-
-
-// 		/* When not informed, continue to travel until randomly switching to the searching state. */
-		
-// 		//took off
-// 		// if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0) {
-// 		// 	 if(isInformed == false){
-// 		// 		//end
-
-
-// 				// If we are in a restricted congestion-trip, do not allow the normal
-// 			   // probabilistic switch to SEARCHING; instead we must reach the
-// 			   // restricted target first.
-// 			   if(hasRestrictedZone) {
-// 				   if(distanceToTarget < tolerance) {
-// 					   Stop();
-// 					   SearchTime = 0;
-// 					   CPFA_state = SEARCHING;
-// 					   travelingTime += SimulationTick() - startTime; //qilu 10/22
-// 					   startTime = SimulationTick(); //qilu 10/22
-
-// 					   // Immediately generate the first uninformed search step INSIDE the
-// 					   // restricted rectangle so the robot does not visibly pause at the
-// 					   // boundary when switching to SEARCHING.
-// 					   SetIsHeadingToNest(false);
-// 					   argos::Real USV = LoopFunctions->UninformedSearchVariation.GetValue();
-// 					   argos::Real r = RNG->Gaussian(USV);
-// 					   argos::CRadians rotation(r);
-// 					   argos::CRadians angle1(rotation);
-// 					   argos::CRadians angle2(GetHeading());
-// 					   argos::CRadians turn_angle(angle1 + angle2);
-// 					   argos::CVector2 turn_vector(SearchStepSize, turn_angle);
-// 					   argos::CVector2 cand = turn_vector + GetPosition();
-
-// 					   // Clamp into restricted rectangle
-// 					   if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
-// 					   else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
-// 					   if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
-// 					   else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
-
-// 					   // If candidate is effectively at current position, jitter slightly
-// 					   argos::Real dx = cand.GetX() - GetPosition().GetX();
-// 					   argos::Real dy = cand.GetY() - GetPosition().GetY();
-// 					   if((dx*dx + dy*dy) < 1e-6) {
-// 						   argos::Real jitterX = RNG->Uniform(argos::CRange<argos::Real>(-0.1, 0.1));
-// 						   argos::Real jitterY = RNG->Uniform(argos::CRange<argos::Real>(-0.1, 0.1));
-// 						   cand.SetX(std::min(zoneXMax, std::max(zoneXMin, cand.GetX() + jitterX)));
-// 						   cand.SetY(std::min(zoneYMax, std::max(zoneYMin, cand.GetY() + jitterY)));
-// 					   }
-
-// 					   	argos::CVector2 cur = GetPosition();
-// 						argos::Real dx = cand.GetX() - cur.GetX();
-// 						argos::Real dy = cand.GetY() - cur.GetY();
-
-// 						if(dx*dx + dy*dy < 1e-4) {
-// 							// pick a new random target INSIDE restricted zone
-// 							SetRandomSearchLocation();
-// 						} else {
-// 							SetTarget(cand);
-// 						}
-
-// 			LOG << "[DEBUG " << GetId() << "] Entered SEARCHING from restricted zone at t="
-// 				<< (argos::Real)SimulationTick() / SimulationTicksPerSecond()
-// 				<< " pos=" << GetPosition()
-// 				<< " target=" << GetTarget()
-// 				<< "\n";
-// 				   }
-
-// 					   // DEBUG: we are now SEARCHING (after reaching restricted target)
-// 					   if(m_pcLEDs) {
-// 						   m_pcLEDs->SetAllColors(CColor::GREEN);
-// 					   }
-// 			   // end hasRestrictedZone branch
-// 			   } else {
-
-// 				   if(SimulationTick()%(5*SimulationTicksPerSecond())==0 && randomNumber < LoopFunctions->ProbabilityOfSwitchingToSearching){
-// 						 //LOG<<"Switch to search..."<<endl;
-// 								 Stop();
-// 								 SearchTime = 0;
-// 								 CPFA_state = SEARCHING;
-// 								 travelingTime+=SimulationTick()-startTime;//qilu 10/22
-// 								 startTime = SimulationTick();//qilu 10/22
-//         						// DEBUG: now SEARCHING (normal case)
-//         						if(m_pcLEDs) {
-//             						m_pcLEDs->SetAllColors(CColor::GREEN);
-//         						}
-
-// 								 argos::Real USV = LoopFunctions->UninformedSearchVariation.GetValue();
-// 								 argos::Real rand = RNG->Gaussian(USV);
-// 								 argos::CRadians rotation(rand);
-// 								 argos::CRadians angle1(rotation.UnsignedNormalize());
-// 								 argos::CRadians angle2(GetHeading().UnsignedNormalize());
-// 								 argos::CRadians turn_angle(angle1 + angle2);
-// 								 argos::CVector2 turn_vector(SearchStepSize, turn_angle);
-// 								 SetIsHeadingToNest(false);
-// 								 SetTarget(turn_vector + GetPosition());
-// 					 }
-// 					 else if(distanceToTarget < tolerance){
-// 						 SetRandomSearchLocation();
-// 					 }
-// 			 }
-// 		 } 
-		
-		 
-//      /* Are we informed? I.E. using site fidelity or pheromones. */	
-//      if(isInformed && distanceToTarget < tolerance) {
-//           SearchTime = 0;
-//           CPFA_state = SEARCHING;
-//           travelingTime+=SimulationTick()-startTime;//qilu 10/22
-//           startTime = SimulationTick();//qilu 10/22
-
-//           if(isUsingSiteFidelity) {
-//                isUsingSiteFidelity = false;
-//                SetFidelityList();
-//           }
-//      }
-//      else{ // based on the density of robots, decide to do random search
-// 		 if(isInformed == true && SimulationTick()% SimulationTicksPerSecond() ==0 ){
-// 			 //LOG<<"Departing..."<<endl;
-			
-// 	      }
-// 	 }
-
-
-// }
-//ends here
-
-
-//old implementation<<<----
-// void CPFA_controller::Searching() {
-//  //LOG<<"Searching..."<<endl;
-// 	// "scan" for food only every half of a second
-// 	if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0) {
-// 		SetHoldingFood();
-// 	}
-// 	// When not carrying food, calculate movement.
-// 	if(IsHoldingFood() == false) {
-// 		   argos::CVector2 distance = GetPosition() - GetTarget();
-// 		   argos::Real     random   = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-// 	// --- NEW: hard anti-stuck rule inside congestion quadrant ---
-//     // If we are in a restricted zone and our target is basically on top of us,
-//     // immediately pick a new random point in the quadrant.
-//     argos::Real dist = distance.Length();
-//     if(hasRestrictedZone && dist < 1e-3) { // ~1 mm, tweak if needed
-//         SetRandomSearchLocation();  // this will pick inside [zoneXMin,zoneXMax]×[zoneYMin,zoneYMax]
-//         return;
-//     }
-//     // ------------------------------------------------------------
-
-
-// 		//    argos::Real     random   = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0)); -> changed
-     
-//        // If we reached our target search location, set a new one. The 
-//        // new search location calculation is different based on whether
-//        // we are currently using informed or uninformed search.
-// 	   argos::CVector2 target = GetTarget();
-//        argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
-//        bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer || 
-//                        target.GetX() < ForageRangeX.GetMin() + wallBuffer || 
-//                        target.GetY() > ForageRangeY.GetMax() - wallBuffer || 
-//                        target.GetY() < ForageRangeY.GetMin() + wallBuffer);
-//         argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
-// 	   // If we’re in a congestion-restricted rectangle, keep tolerance tight
-// if(hasRestrictedZone) {
-//     tolerance = TargetDistanceTolerance;
-// }
-//     //    if(distance.SquareLength() < tolerance) { -> changed
-// 	   if(dist < tolerance) {
-//          // randomly give up searching
-//          if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest) {
-             
-//              SetFidelityList();
-// 	         TrailToShare.clear();
-//              SetIsHeadingToNest(true);
-//              SetTarget(LoopFunctions->NestPosition);
-//              isGivingUpSearch = true;
-// 	         LoopFunctions->FidelityList.erase(controllerID);
-//              isUsingSiteFidelity = false; 
-//              updateFidelity = false; 
-//              CPFA_state = RETURNING;
-//              searchingTime+=SimulationTick()-startTime;
-//              startTime = SimulationTick();
-
-//              /*
-//              ofstream log_output_stream;
-//              log_output_stream.open("giveup.txt", ios::app);
-//              log_output_stream << "Give up: " << SimulationTick() / SimulationTicksPerSecond() << endl;
-//              log_output_stream.close();
-//              */
-     
-//              return; 
-             
-//          }
-//          argos::Real USCV = LoopFunctions->UninformedSearchVariation.GetValue();
-//          argos::Real rand = RNG->Gaussian(USCV);
-
-//          // uninformed search
-//          if(isInformed == false) {
-//           argos::CRadians rotation(rand);
-//           argos::CRadians angle1(rotation);
-//           argos::CRadians angle2(GetHeading());
-//           argos::CRadians turn_angle(angle1 + angle2);
-//           argos::CVector2 turn_vector(SearchStepSize, turn_angle);
-      
-//           //argos::LOG << "UNINFORMED SEARCH: rotation: " << angle1 << std::endl;
-//           //argos::LOG << "UNINFORMED SEARCH: old heading: " << angle2 << std::endl;
-      
-//           /*
-//           ofstream log_output_stream;
-//           log_output_stream.open("uninformed_angle1.log", ios::app);
-//           log_output_stream << angle1.GetValue() << endl;
-//           log_output_stream.close();
-      
-//           log_output_stream.open("uninformed_angle2.log", ios::app);
-//           log_output_stream << angle2.GetValue() << endl;
-//           log_output_stream.close();
-      
-//           log_output_stream.open("uninformed_turning_angle.log", ios::app);
-//           log_output_stream << turn_angle.GetValue() << endl;
-//           log_output_stream.close();
-//           */
-//         //   SetIsHeadingToNest(false);
-//         //   SetTarget(turn_vector + GetPosition());
-
-// 		SetIsHeadingToNest(false);
-          
-//               argos::CVector2 cand = turn_vector + GetPosition();
-//               if(hasRestrictedZone) {
-//                   // clamp into restricted rectangle
-//                   if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
-//                   else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
-//                   if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
-//                   else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
-//               }
-
-// 			  //** 
-// 			  // 🔧 FIX: if new target is basically the same as current position, nudge it
-//     {
-//         argos::CVector2 cur = GetPosition();
-//         argos::Real dx = cand.GetX() - cur.GetX();
-//         argos::Real dy = cand.GetY() - cur.GetY();
-//         if(dx*dx + dy*dy < 1e-4) { // ~1 cm^2, adjust if needed
-//             if(hasRestrictedZone) {
-//                 // push toward center of rectangle
-//                 argos::Real cx = 0.5 * (zoneXMin + zoneXMax);
-//                 argos::Real cy = 0.5 * (zoneYMin + zoneYMax);
-//                 cand.SetX(cx);
-//                 cand.SetY(cy);
-//             } else {
-//                 // small step forward in current heading
-//                 cand = cur + argos::CVector2(SearchStepSize, GetHeading());
-//             }
-//         }
-//     }
-//               SetTarget(cand);
-          
-//          }
-//          // informed search
-//          else{
-          
-//               SetIsHeadingToNest(false);
-              
-//             //   if(IsAtTarget()) {
-//                   size_t          t           = SearchTime++;
-//                   argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
-//                   argos::Real     pi          = (argos::CRadians::PI).GetValue();
-//                   argos::Real     isd         = LoopFunctions->RateOfInformedSearchDecay;
-// 	                  /*argos::Real     correlation = GetExponentialDecay((2.0 * twoPi) - LoopFunctions->UninformedSearchVariation.GetValue(), t, isd);
-// 	                  argos::Real     rand = RNG->Gaussian(correlation + LoopFunctions->UninformedSearchVariation.GetValue());
-// 	                       */ //qilu 09/24/2016
-// 	                  Real correlation = GetExponentialDecay(rand, t, isd);
-// 	                  //argos::CRadians rotation(GetBound(rand, -pi, pi));
-// 	                  argos::CRadians rotation(GetBound(correlation, -pi, pi));//qilu 09/24/2016
-//                   argos::CRadians angle1(rotation);
-//                   argos::CRadians angle2(GetHeading());
-//                   argos::CRadians turn_angle(angle2 + angle1);
-//                   argos::CVector2 turn_vector(SearchStepSize, turn_angle);
-          
-//                   //argos::LOG << "INFORMED SEARCH: rotation: " << angle1 << std::endl;
-//                   //argos::LOG << "INFORMED SEARCH: old heading: " << angle2 << std::endl;
-          
-//                   /*
-//                   ofstream log_output_stream;
-//                   log_output_stream.open("informed_angle1.log", ios::app);
-//                   log_output_stream << angle1.GetValue() << endl;
-//                   log_output_stream.close();
-          
-//                   log_output_stream.open("informed_angle2.log", ios::app);
-//                   log_output_stream << angle2.GetValue() << endl;
-//                   log_output_stream.close();
-          
-//                   log_output_stream.open("informed_turning_angle.log", ios::app);
-//                   log_output_stream << turn_angle.GetValue() << endl;
-//                   log_output_stream.close();
-//                   */
-//                  // SetTarget(turn_vector + GetPosition());
-
-				  
-// 					  argos::CVector2 cand = turn_vector + GetPosition();
-// 					  if(hasRestrictedZone) {
-// 						  // clamp into restricted rectangle
-// 						  if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
-// 						  else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
-// 						  if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
-// 						  else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
-// 					  }
-// 					  //**
-// 					   // 🔧 same “don’t stand still” fix
-//     {
-//         argos::CVector2 cur = GetPosition();
-//         argos::Real dx = cand.GetX() - cur.GetX();
-//         argos::Real dy = cand.GetY() - cur.GetY();
-//         if(dx*dx + dy*dy < 1e-4) {
-//             if(hasRestrictedZone) {
-//                 argos::Real cx = 0.5 * (zoneXMin + zoneXMax);
-//                 argos::Real cy = 0.5 * (zoneYMin + zoneYMax);
-//                 cand.SetX(cx);
-//                 cand.SetY(cy);
-//             } else {
-//                 cand = cur + argos::CVector2(SearchStepSize, GetHeading());
-//             }
-//         }
-//     }
-// 					  SetTarget(cand);
-				  
-//             //   }
-//          }
-// 	  } //not reach the target location
-// 	  else {
-// 			 //argos::LOG << "SEARCH: Haven't reached destination. " << GetPosition() << "," << GetTarget() << std::endl;
-		
-			 
-// 	  }
-//     }
-// 	else {
-// 		   //argos::LOG << "SEARCH: Carrying food." << std::endl;
-// 	}
-
-// 	// Food has been found, change state to RETURNING and go to the nest
-// 	//else {
-// 	//	SetTarget(LoopFunctions->NestPosition);
-// 	//	CPFA_state = RETURNING;
-// 	//}
-// }
-// ///ends here->>>>
-
 void CPFA_controller::Searching()
 {
     if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0)
@@ -967,9 +597,14 @@ void CPFA_controller::Searching()
         return;
 
     argos::CVector2 cur = GetPosition();
+    argos::CVector2 tgt = GetTarget();
+    argos::Real dist = (cur - tgt).Length();
 
-	 // --- ONLY for restricted-trip searching ---
-    if(hasRestrictedZone) {
+    /* ================================================================
+       ==================   RESTRICTED ZONE SEARCHING   ===============
+       ================================================================ */
+    if(hasRestrictedZone)
+    {
         if(m_pcLEDs)
             m_pcLEDs->SetAllColors(CColor::GREEN); // SEARCHING (restricted)
 
@@ -977,123 +612,136 @@ void CPFA_controller::Searching()
             << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
             << " pos=" << cur
             << " target=" << GetTarget() << "\n";
-    }
 
-    argos::CVector2 distance = cur - GetTarget();
-    argos::Real dist = distance.Length();
+        argos::CVector2 distance = cur - GetTarget();
+        argos::Real dist2 = distance.Length();
 
-    /* Anti-freeze: if target == position */
-    if(hasRestrictedZone && dist < 1e-4)
-    {
-        argos::CVector2 cand =
-            cur + argos::CVector2(SearchStepSize, GetHeading());
-
-        // clamp to rectangle
-        if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
-        else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
-        if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
-        else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
-
-        SetTarget(cand);
-        return;
-    }
-
-    /* Tolerance */
-    argos::CVector2 tgt = GetTarget();
-    argos::Real wallBuffer = 0.25;
-
-    bool nearWall =
-        (tgt.GetX() > ForageRangeX.GetMax() - wallBuffer ||
-         tgt.GetX() < ForageRangeX.GetMin() + wallBuffer ||
-         tgt.GetY() > ForageRangeY.GetMax() - wallBuffer ||
-         tgt.GetY() < ForageRangeY.GetMin() + wallBuffer);
-
-    argos::Real tolerance =
-        hasRestrictedZone ? TargetDistanceTolerance :
-        (nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance);
-
-    /* reached search target */
-    if(dist < tolerance)
-    {
-        /* Random give-up → return to nest */
-        argos::Real r =
-            RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-
-        if((SimulationTick() % (5 * SimulationTicksPerSecond())) == 0 &&
-           r < LoopFunctions->ProbabilityOfReturningToNest)
+        /* Anti-freeze: if target == position */
+        if(dist2 < 1e-4)
         {
-            SetFidelityList();
-            TrailToShare.clear();
+            argos::CVector2 cand =
+                cur + argos::CVector2(SearchStepSize, GetHeading());
 
-            SetIsHeadingToNest(true);
-            SetTarget(LoopFunctions->NestPosition);
-            isGivingUpSearch = true;
-            LoopFunctions->FidelityList.erase(controllerID);
-            isUsingSiteFidelity = false;
-            updateFidelity = false;
-
-			// If we were on a restricted outbound trip, end it here
-        	if(hasRestrictedZone) {
-            hasRestrictedZone = false;
-
-            if(m_pcLEDs)
-                m_pcLEDs->SetAllColors(CColor::BLUE); // RETURNING after restricted trip
-
-            LOG << "[" << GetId() << "] RESTRICTED TRIP: GIVE-UP → RETURNING (exit quadrant) at t="
-                << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
-                << " pos=" << cur << "\n";
-        }
-
-
-            CPFA_state = RETURNING;
-            searchingTime += SimulationTick() - startTime;
-            startTime = SimulationTick();
-            return;
-        }
-
-        /* uninformed search step */
-        argos::Real USCV = LoopFunctions->UninformedSearchVariation.GetValue();
-        argos::Real rr = RNG->Gaussian(USCV);
-
-        argos::CRadians turn = GetHeading() + argos::CRadians(rr);
-        argos::CVector2 cand(SearchStepSize, turn);
-        cand += cur;
-
-        /* clamp inside restricted zone */
-        if(hasRestrictedZone)
-        {
             if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
             else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
             if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
             else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
+
+            SetTarget(cand);
+            return;
         }
 
-        /* anti-freeze */
-        if((cand - cur).SquareLength() < 1e-4)
-        {
-            cand = cur + argos::CVector2(SearchStepSize, GetHeading());
+        argos::Real tolerance = TargetDistanceTolerance;
 
-            if(hasRestrictedZone)
+        if(dist2 < tolerance)
+        {
+            argos::Real USCV = LoopFunctions->UninformedSearchVariation.GetValue();
+            argos::Real rr = RNG->Gaussian(USCV);
+
+            argos::CRadians turn = GetHeading() + argos::CRadians(rr);
+            argos::CVector2 cand(SearchStepSize, turn);
+            cand += cur;
+
+            if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
+            else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
+            if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
+            else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
+
+            if((cand - cur).SquareLength() < 1e-4)
             {
+                cand = cur + argos::CVector2(SearchStepSize, GetHeading());
+
                 if(cand.GetX() < zoneXMin) cand.SetX(zoneXMin);
                 else if(cand.GetX() > zoneXMax) cand.SetX(zoneXMax);
                 if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
                 else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
             }
+
+            /* leave restricted zone after first search step */
+            hasRestrictedZone = false;
+
+            SetIsHeadingToNest(false);
+            SetTarget(cand);
         }
-		/* --- FIX: leave restricted zone after first search step --- */
-if(hasRestrictedZone) {
-    hasRestrictedZone = false;
-}
+
+        return;  // <<< DO NOT TOUCH THE NORMAL CPFA CODE BELOW
+    }
 
 
-        SetIsHeadingToNest(false);
-        SetTarget(cand);
+/* ==================================================================
+   ===================  ORIGINAL CPFA SEARCHING  ====================
+   ================================================================== */
+
+ //LOG<<"Searching..."<<endl;
+	// "scan" for food only every half of a second
+	if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0) {
+		SetHoldingFood();
+	}
+	// When not carrying food, calculate movement.
+	if(IsHoldingFood() == false) {
+		   argos::CVector2 distance = GetPosition() - GetTarget();
+		   argos::Real     random   = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
+     
+       // If we reached our target search location, set a new one. The 
+       // new search location calculation is different based on whether
+       // we are currently using informed or uninformed search.
+	   argos::CVector2 target = GetTarget();
+       argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
+       bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer || 
+                       target.GetX() < ForageRangeX.GetMin() + wallBuffer || 
+                       target.GetY() > ForageRangeY.GetMax() - wallBuffer || 
+                       target.GetY() < ForageRangeY.GetMin() + wallBuffer);
+
+       argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
+       if(distance.SquareLength() < tolerance) {
+         // randomly give up searching
+         if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest) {
+             
+             SetFidelityList();
+	         TrailToShare.clear();
+             SetIsHeadingToNest(true);
+             SetTarget(LoopFunctions->NestPosition);
+             isGivingUpSearch = true;
+	         LoopFunctions->FidelityList.erase(controllerID);
+             isUsingSiteFidelity = false; 
+             updateFidelity = false; 
+             CPFA_state = RETURNING;
+             searchingTime+=SimulationTick()-startTime;
+             startTime = SimulationTick();
+             return; 
+         }
+
+         argos::Real USCV = LoopFunctions->UninformedSearchVariation.GetValue();
+         argos::Real rand = RNG->Gaussian(USCV);
+
+         // uninformed search
+         if(isInformed == false) {
+          argos::CRadians rotation(rand);
+          argos::CRadians angle1(rotation);
+          argos::CRadians angle2(GetHeading());
+          argos::CRadians turn_angle(angle1 + angle2);
+          argos::CVector2 turn_vector(SearchStepSize, turn_angle);
+          SetIsHeadingToNest(false);
+          SetTarget(turn_vector + GetPosition());
+         }
+         // informed search
+         else{
+              SetIsHeadingToNest(false);
+                  size_t          t           = SearchTime++;
+                  argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
+                  argos::Real     pi          = (argos::CRadians::PI).GetValue();
+                  argos::Real     isd         = LoopFunctions->RateOfInformedSearchDecay;
+	              Real correlation = GetExponentialDecay(rand, t, isd);
+	              argos::CRadians rotation(GetBound(correlation, -pi, pi));
+                  argos::CRadians angle1(rotation);
+                  argos::CRadians angle2(GetHeading());
+                  argos::CRadians turn_angle(angle2 + angle1);
+                  argos::CVector2 turn_vector(SearchStepSize, turn_angle);
+                  SetTarget(turn_vector + GetPosition());
+         }
+	  } 
     }
 }
-
-
-
 
 
 // Cause the robot to rotate in place as if surveying the surrounding targets
@@ -1239,86 +887,6 @@ void CPFA_controller::Returning() {
 	    
     }		
 }
-	//old implementation ->>>>
-// void CPFA_controller::SetRandomSearchLocation() {
-// //already here...
-// // 	 // If a restricted zone is active, choose uniformly inside it.
-// //    if(hasRestrictedZone) {
-// // 	   // Guard: if invalid zone, fallback to normal behavior
-// // 	   if(zoneXMin < zoneXMax && zoneYMin < zoneYMax) {
-// // 			   argos::Real x = RNG->Uniform(argos::CRange<argos::Real>(zoneXMin, zoneXMax));
-// // 			   argos::Real y = RNG->Uniform(argos::CRange<argos::Real>(zoneYMin, zoneYMax));
-// // 			   SetIsHeadingToNest(false);  // outbound trip, NOT going to nest
-// //         	   SetTarget(argos::CVector2(x, y));
-// // 			   // DEBUG: show "restricted-zone outbound" with ORANGE LEDs
-// //             if(m_pcLEDs) {
-// //             	m_pcLEDs->SetAllColors(CColor::ORANGE);
-// //             }
-// // 		   return;
-// // 	   }
-// // 	   // fall through to full-arena behavior if zone invalid
-// //    }
-
-// //new
-// /* restricted zone active */
-//     if(hasRestrictedZone &&
-//        zoneXMin < zoneXMax &&
-//        zoneYMin < zoneYMax)
-//     {
-//         argos::Real x = RNG->Uniform(argos::CRange<argos::Real>(zoneXMin, zoneXMax));
-//         argos::Real y = RNG->Uniform(argos::CRange<argos::Real>(zoneYMin, zoneYMax));
-//         argos::CVector2 tgt(x,y);
-
-//         if((tgt - GetPosition()).SquareLength() < 1e-4) {
-//             // force a move inside quadrant
-//             tgt.SetX((zoneXMin+zoneXMax)/2);
-//             tgt.SetY((zoneYMin+zoneYMax)/2);
-//         }
-
-//         SetIsHeadingToNest(false);
-//         SetTarget(tgt);
-//         return;
-//     }
-
-// 	argos::Real random_wall = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-// 	argos::Real x = 0.0, y = 0.0;
-
-// 	/* north wall */
-// 	if(random_wall < 0.25) {
-// 		x = RNG->Uniform(ForageRangeX);
-// 		y = ForageRangeY.GetMax();
-// 	}
-// 	/* south wall */
-// 	else if(random_wall < 0.5) {
-// 		x = RNG->Uniform(ForageRangeX);
-// 		y = ForageRangeY.GetMin();
-// 	}
-// 	/* east wall */
-// 	else if(random_wall < 0.75) {
-// 		x = ForageRangeX.GetMax();
-// 		y = RNG->Uniform(ForageRangeY);
-// 	}
-// 	/* west wall */
-// 	else {
-// 		x = ForageRangeX.GetMin();
-// 		y = RNG->Uniform(ForageRangeY);
-// 	}
-		
-// 	SetIsHeadingToNest(false); // Turn off error for this
-// 	SetTarget(argos::CVector2(x, y));
-// 	// DEBUG: show "normal outbound to wall" with BLUE LEDs
-//     if(m_pcLEDs) {
-//         m_pcLEDs->SetAllColors(CColor::BLUE);
-// 	}
-// }
-
-//ends here
-/*****
- * Check if the iAnt is finding food. This is defined as the iAnt being within
- * the distance tolerance of the position of a food item. If the iAnt has found
- * food then the appropriate boolean flags are triggered.
- *****/
-
 
 
 void CPFA_controller::SetRandomSearchLocation() {
@@ -1396,13 +964,13 @@ void CPFA_controller::SetRandomSearchLocation() {
     argos::CVector2 cand(x, y);
     argos::CVector2 cur = GetPosition();
 
-    /* --- 🔧 Anti-freeze for wall search ---
-       Rare but safe to include */
-    argos::Real dx = cand.GetX() - cur.GetX();
-    argos::Real dy = cand.GetY() - cur.GetY();
-    if(dx*dx + dy*dy < 1e-4) {
-        cand = cur + argos::CVector2(SearchStepSize, GetHeading());
-    }
+    // /* --- 🔧 Anti-freeze for wall search ---
+    //    Rare but safe to include */
+    // argos::Real dx = cand.GetX() - cur.GetX();
+    // argos::Real dy = cand.GetY() - cur.GetY();
+    // if(dx*dx + dy*dy < 1e-4) {
+    //     cand = cur + argos::CVector2(SearchStepSize, GetHeading());
+    // }
 
     SetIsHeadingToNest(false);
     SetTarget(cand);
