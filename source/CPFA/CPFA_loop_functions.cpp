@@ -244,7 +244,7 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 }
 
 void CPFA_loop_functions::PostExperiment() {
-	  
+  
      printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
        
                   
@@ -288,7 +288,27 @@ void CPFA_loop_functions::PostExperiment() {
             BaseController& c = dynamic_cast<BaseController&>(footBot.GetControllableEntity().GetController());
             CPFA_controller& c2 = dynamic_cast<CPFA_controller&>(c);
             CollisionTime += c2.GetCollisionTime();
+		}
             
+			/*------------------------------------------------*/      
+        {
+            double collisions_sec = CollisionTime / (2.0 * ticks_per_second);
+
+            std::ofstream dataOutput("results/plot_experiments/Clustered_CPFA_r64_tag512_16by16.txt", std::ios::app);
+
+            if(dataOutput.tellp() == 0) {
+                dataOutput << "score,time_seconds,collisions_seconds,seed\n";
+            }
+
+            dataOutput << score << ","
+                  << getSimTimeInSeconds() << ","
+                  << collisions_sec << ","
+                  << RandomSeed << "\n";
+
+            dataOutput.close();
+        }
+        /* ---------------------------------------------- */
+
             /*if(c2.GetStatus() == "SEARCHING"){
                 total_search_time += SimTime-c2.GetTravelingTime();
                 total_travel_time += c2.GetTravelingTime();
@@ -297,7 +317,7 @@ void CPFA_loop_functions::PostExperiment() {
 		total_search_time += c2.GetSearchingTime();
 		total_travel_time += SimTime-c2.GetSearchingTime();
             } */        
-        }
+        
         //travelSearchTimeDataOutput<< total_travel_time/ticks_per_second<<", "<<total_search_time/ticks_per_second<<endl;
         //travelSearchTimeDataOutput.close();   
              
