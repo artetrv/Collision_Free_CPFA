@@ -15,21 +15,21 @@ CPFA_controller::CPFA_controller() :
 	survey_count(0),
 	isUsingPheromone(0),
     SiteFidelityPosition(1000, 1000), 
-        searchingTime(0),
-        travelingTime(0),
-        startTime(0),
+    searchingTime(0),
+    travelingTime(0),
+    startTime(0),
     m_pcLEDs(NULL),
     TrailColor(CColor::BLUE),
-        updateFidelity(false),
-        last_time_in_seconds(0),
-		// ---- NEW defaults
+    updateFidelity(false),
+    last_time_in_seconds(0),
+	// ---- NEW defaults ----
     s_WindowSize(100),
-    sw_sample_pos(4),   // sample every TPS/4 ticks (~0.25s at 32 TPS)
+    sw_sample_pos(4),   // real ~0.25 s/sample at 32 TPS
     sw_waitTicks(1),
-    sw_CongRatioOn(1.6),
-    sw_bad_samples(4),
+    sw_CongRatioOn(1.7),
+    sw_bad_samples(5), // ~1.25 s of sustained congestion
     sw_congEps(0.02),
-   sum_window_segments(0.0),
+    sum_window_segments(0.0),
     sw_LastCongSampleTick(0),
     sw_badSample_counter(0),
     InCongested(false)
@@ -147,8 +147,8 @@ void CPFA_controller::ControlStep() {
 }
 
 void CPFA_controller::Reset() {
- num_targets_collected =0;
- isHoldingFood   = false;
+    num_targets_collected =0;
+    isHoldingFood   = false;
     isInformed      = false;
     SearchTime      = 0;
     ResourceDensity = 0;
