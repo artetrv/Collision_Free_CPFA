@@ -299,7 +299,27 @@ void CPFA_loop_functions::PostExperiment() {
             } */        
         }
         //travelSearchTimeDataOutput<< total_travel_time/ticks_per_second<<", "<<total_search_time/ticks_per_second<<endl;
-        //travelSearchTimeDataOutput.close();   
+        //travelSearchTimeDataOutput.close();
+		
+		
+		/*------------------------------------------------*/      
+        {
+            double collisions_sec = CollisionTime / (2.0 * ticks_per_second);
+
+            std::ofstream dataOutput("results/plot_experiments/Clustered_CPFA_r64_tag512_16by16.txt", std::ios::app);
+
+            if(dataOutput.tellp() == 0) {
+                dataOutput << "score,time_seconds,collisions_seconds,seed\n";
+            }
+
+            dataOutput << score << ","
+                  << getSimTimeInSeconds() << ","
+                  << collisions_sec << ","
+                  << RandomSeed << "\n";
+
+            dataOutput.close();
+        }
+        /* ---------------------------------------------- */
              
         ofstream dataOutput( (header+ "iAntTagData.txt").c_str(), ios::app);
         // output to file

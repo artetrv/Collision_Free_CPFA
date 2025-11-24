@@ -1,31 +1,35 @@
 {
-	"BUILD_DIR" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen",
-	"CMAKE_BINARY_DIR" : "/home/qilu/Documents/Collision_Free_CPFA/build",
-	"CMAKE_CURRENT_BINARY_DIR" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA",
-	"CMAKE_CURRENT_SOURCE_DIR" : "/home/qilu/Documents/Collision_Free_CPFA/source/CPFA",
-	"CMAKE_EXECUTABLE" : "/usr/bin/cmake",
-	"CMAKE_LIST_FILES" : [ "/home/qilu/Documents/Collision_Free_CPFA/source/CPFA/CMakeLists.txt" ],
-	"CMAKE_SOURCE_DIR" : "/home/qilu/Documents/Collision_Free_CPFA",
-	"DEP_FILE" : "",
-	"DEP_FILE_RULE_NAME" : "",
+	"BUILD_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen",
+	"CMAKE_BINARY_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA",
+	"CMAKE_EXECUTABLE" : "/opt/homebrew/bin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA/CMakeLists.txt"
+	],
+	"CMAKE_SOURCE_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "CPFA_loop_functions_autogen/timestamp",
 	"HEADERS" : 
 	[
 		[
-			"/home/qilu/Documents/Collision_Free_CPFA/source/CPFA/CPFA_loop_functions.h",
+			"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA/CPFA_loop_functions.h",
 			"Mu",
 			"EWIEGA46WW/moc_CPFA_loop_functions.cpp",
 			null
 		],
 		[
-			"/home/qilu/Documents/Collision_Free_CPFA/source/CPFA/CPFA_qt_user_functions.h",
+			"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA/CPFA_qt_user_functions.h",
 			"Mu",
 			"EWIEGA46WW/moc_CPFA_qt_user_functions.cpp",
 			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
-	"INCLUDE_DIR" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/include",
-	"MOC_COMPILATION_FILE" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/mocs_compilation.cpp",
+	"INCLUDE_DIR" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/include",
+	"MOC_COMPILATION_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/mocs_compilation.cpp",
 	"MOC_DEFINITIONS" : 
 	[
 		"CPFA_loop_functions_EXPORTS",
@@ -33,6 +37,8 @@
 		"QT_CORE_LIB",
 		"QT_GUI_LIB",
 		"QT_NO_DEBUG",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
 		"QT_WIDGETS_LIB"
 	],
 	"MOC_DEPEND_FILTERS" : 
@@ -44,59 +50,81 @@
 	],
 	"MOC_INCLUDES" : 
 	[
-		"/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA",
-		"/home/qilu/Documents/Collision_Free_CPFA/source/CPFA",
-		"/home/qilu/Documents/Collision_Free_CPFA",
-		"/usr/include/Headers",
-		"/usr/include/lua5.3",
-		"/home/qilu/Documents/Collision_Free_CPFA/source",
-		"/home/qilu/anaconda3/include/qt",
-		"/home/qilu/anaconda3/include/qt/QtWidgets",
-		"/home/qilu/anaconda3/include/qt/QtGui",
-		"/home/qilu/anaconda3/include/qt/QtCore",
-		"/home/qilu/anaconda3/mkspecs/linux-g++",
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA",
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA",
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA",
+		"/opt/homebrew/include",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework",
+		"/opt/homebrew/include/lua",
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework",
+		"/opt/homebrew/Cellar/qt/6.9.2/share/qt/mkspecs/macx-clang",
+		"/opt/homebrew/Cellar/qt/6.9.2/include",
 		"/usr/local/include",
-		"/usr/include",
-		"/usr/include/c++/11",
-		"/usr/include/x86_64-linux-gnu/c++/11",
-		"/usr/include/c++/11/backward",
-		"/usr/lib/gcc/x86_64-linux-gnu/11/include",
-		"/usr/include/x86_64-linux-gnu"
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
+		"/Library/Developer/CommandLineTools/usr/lib/clang/16/include",
+		"/Library/Developer/CommandLineTools/usr/include"
 	],
-	"MOC_MACRO_NAMES" : [ "Q_OBJECT", "Q_GADGET", "Q_NAMESPACE", "Q_NAMESPACE_EXPORT" ],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
 	"MOC_OPTIONS" : [],
 	"MOC_PATH_PREFIX" : false,
 	"MOC_PREDEFS_CMD" : 
 	[
 		"/usr/bin/c++",
+		"-std=c++17",
+		"-w",
 		"-dM",
 		"-E",
-		"-c",
-		"/usr/share/cmake-3.22/Modules/CMakeCXXCompilerABI.cpp"
+		"/opt/homebrew/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
 	],
-	"MOC_PREDEFS_FILE" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/moc_predefs.h",
+	"MOC_PREDEFS_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CPFA_loop_functions_autogen/moc_predefs.h",
 	"MOC_RELAXED_MODE" : false,
 	"MOC_SKIP" : [],
 	"MULTI_CONFIG" : false,
 	"PARALLEL" : 12,
-	"PARSE_CACHE_FILE" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/ParseCache.txt",
-	"QT_MOC_EXECUTABLE" : "/home/qilu/anaconda3/bin/moc",
+	"PARSE_CACHE_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/opt/homebrew/Cellar/qt/6.9.2/share/qt/libexec/moc",
 	"QT_UIC_EXECUTABLE" : "",
-	"QT_VERSION_MAJOR" : 5,
+	"QT_VERSION_MAJOR" : 6,
 	"QT_VERSION_MINOR" : 9,
-	"SETTINGS_FILE" : "/home/qilu/Documents/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/AutogenUsed.txt",
+	"SETTINGS_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
 		[
-			"/home/qilu/Documents/Collision_Free_CPFA/source/CPFA/CPFA_loop_functions.cpp",
+			"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA/CPFA_loop_functions.cpp",
 			"Mu",
 			null
 		],
 		[
-			"/home/qilu/Documents/Collision_Free_CPFA/source/CPFA/CPFA_qt_user_functions.cpp",
+			"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source/CPFA/CPFA_qt_user_functions.cpp",
 			"Mu",
 			null
 		]
 	],
+	"USE_BETTER_GRAPH" : true,
 	"VERBOSITY" : 0
 }

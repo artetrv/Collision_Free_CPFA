@@ -63,7 +63,7 @@ VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
-  <arena center="0,0,0.5" size="16.0, 16.0, 1">
+  <arena center="0,0,0.5" size="8.0, 8.0, 1">
 
     <floor id="floor" pixels_per_meter="10" source="loop_functions"/>
     
@@ -91,7 +91,7 @@ VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 <distribute>
 <position max="3.0, 3.0, 0.0" method="uniform" min="-3.0, -3.0, 0.0"/>
 <orientation mean="0, 0, 0" method="gaussian" std_dev="360, 0, 0"/>
-<entity max_trials="100" quantity="64">
+<entity max_trials="100" quantity="16">
 <foot-bot id="F0-"><controller config="CPFA"/></foot-bot>
 </entity>
 </distribute>
@@ -113,7 +113,7 @@ VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
   <!-- * Visualization * -->
   <!-- ****************** -->
 
-
+ <!--
  <visualization>
 
 <qt-opengl>
