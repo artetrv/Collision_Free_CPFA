@@ -92,7 +92,7 @@
 <distribute>
 <position max="3.0, 3.0, 0.0" method="uniform" min="-3.0, -3.0, 0.0"/>
 <orientation mean="0, 0, 0" method="gaussian" std_dev="360, 0, 0"/>
-<entity max_trials="100" quantity="15">
+<entity max_trials="100" quantity="16">
 <foot-bot id="F"><controller config="CPFA"/></foot-bot>
 </entity>
 </distribute>
