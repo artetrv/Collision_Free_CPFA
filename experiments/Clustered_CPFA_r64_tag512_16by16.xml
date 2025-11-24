@@ -52,8 +52,8 @@
         UninformedSearchVariation="3.67372660634"/>
 
          <settings CongWindowSize="100" CongSampleDivisor="4" CongRatioOn="1.6" CongHOn="4" CongEps="0.02"
-         ClusterWidthX="3" ClusterWidthY="3" DrawDensityRate="4" DrawIDs="1" DrawTargetRays="0" DrawTrails="0" FoodDistribution="1" FoodItemCount="108" FoodRadius="0.05" MaxSimCounter="1" 
-         MaxSimTimeInSeconds="1800" NestElevation="0.001" NestPosition="0.0, 0.0" NestRadius="0.10" NumberOfClusters="12" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" 
+         ClusterWidthX="4" ClusterWidthY="4" DrawDensityRate="4" DrawIDs="1" DrawTargetRays="0" DrawTrails="0" FoodDistribution="1" FoodItemCount="64" FoodRadius="0.05" MaxSimCounter="1" 
+         MaxSimTimeInSeconds="1800" NestElevation="0.001" NestPosition="0.0, 0.0" NestRadius="0.10" NumberOfClusters="4" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" 
          VaryCapacityFlag = "0" VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 
   </loop_functions>
@@ -61,27 +61,30 @@
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
-  <arena center="0,0,0.5" size="6.0, 6.0, 1">
+  <arena center="0,0,0.5" size="8.0, 8.0, 1">
 
     <floor id="floor" pixels_per_meter="20" source="loop_functions"/>
     
     <!-- Place four boxes in a square to delimit the arena -->
-    <box id="wall_north1" movable="false" size="6,0.02,0.5">
-      <body orientation="0,0,0" position="0,3,0"/>
-    </box> 
-    
-    
-    <box id="wall_south" movable="false" size="6,0.02,0.5">
-      <body orientation="0,0,0" position="0,-3,0"/>
+    <box id="wall_north1" movable="false" size="8,0.05,0.5">
+      <body orientation="0,0,0" position="0,4,0"/>
     </box>
-    
-    <box id="wall_east" movable="false" size="0.02, 6,0.5">
-      <body orientation="0,0,0" position="3,0,0"/>
+
+    <box id="wall_north2" movable="false" size="8,0.05,0.5">
+      <body orientation="0,0,0" position="0,4,0"/>
     </box>
-    
-    
-    <box id="wall_west" movable="false" size="0.02, 6,0.5">
-      <body orientation="0,0,0" position="-3,0,0"/>
+
+    <box id="wall_south" movable="false" size="8,0.05,0.5">
+      <body orientation="0,0,0" position="0,-4,0"/>
+    </box>
+
+    <box id="wall_east" movable="false" size="0.05, 8,0.5">
+      <body orientation="0,0,0" position="4,0,0"/>
+    </box>
+
+
+    <box id="wall_west" movable="false" size="0.05, 8,0.5">
+      <body orientation="0,0,0" position="-4,0,0"/>
     </box>
     
     
