@@ -23,12 +23,12 @@ CPFA_controller::CPFA_controller() :
     updateFidelity(false),
     last_time_in_seconds(0),
 	// ---- NEW defaults ----
-    s_WindowSize(100),
-    sw_sample_pos(4),   // real ~0.25 s/sample at 32 TPS
+    s_WindowSize(120),
+    sw_sample_pos(6),   // real ~0.25 s/sample at 32 TPS (4)
     sw_waitTicks(1),
-    sw_CongRatioOn(1.7),
-    sw_bad_samples(5), // ~1.25 s of sustained congestion
-    sw_congEps(0.02),
+    sw_CongRatioOn(1.5), //1.6
+    sw_bad_samples(3), // ~1.25 s of sustained congestion
+    sw_congEps(0.03), //(0.2)
     sum_window_segments(0.0),
     sw_LastCongSampleTick(0),
     sw_badSample_counter(0),
