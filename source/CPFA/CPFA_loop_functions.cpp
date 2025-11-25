@@ -306,7 +306,7 @@ void CPFA_loop_functions::PostExperiment() {
         {
             double collisions_sec = CollisionTime / (2.0 * ticks_per_second);
 
-            std::ofstream dataOutput("results/plot_experiments/Clustered_CPFA_r64_tag512_16by16.txt", std::ios::app);
+            std::ofstream dataOutput("results/plot_experiments/Clustered_CPFA_r64_tag512_16by161.txt", std::ios::app);
 
             if(dataOutput.tellp() == 0) {
                 dataOutput << "score,time_seconds,collisions_seconds,seed\n";
