@@ -91,6 +91,37 @@ void CPFA_qt_user_functions::DrawOnArena(CFloorEntity& entity) {
 	DrawNest();
 	DrawGrid();
 
+	// Draw search trajectories for all robots in SEARCHING state
+	for(const auto& robotTrajectory : loopFunctions.SearchTrajectories) {
+		const std::vector<CVector2>& trajectory = robotTrajectory.second;
+		// Draw trajectory lines
+		for(size_t i = 1; i < trajectory.size(); i++) {
+			const CVector2& pPrev = trajectory[i-1];
+			const CVector2& pCurr = trajectory[i];
+			CRay3 ray(CVector3(pPrev.GetX(), pPrev.GetY(), 0.005), CVector3(pCurr.GetX(), pCurr.GetY(), 0.005));
+			DrawRay(ray, CColor::BLUE, 2.0);
+		}
+	}
+	
+	// Draw current spiral overlay points (current 9-group per robot)
+	for(const auto& robotOverlay : loopFunctions.SpiralOverlayPoints) {
+		const std::vector<CVector2>& points = robotOverlay.second;
+		// Draw points
+		for(size_t i = 0; i < points.size(); i++) {
+			const CVector2& p2 = points[i];
+			const CColor color = (i == 0 ? CColor::BLACK : CColor::MAGENTA);
+			const Real radius = (i == 0 ? 0.06 : 0.04);
+			DrawCylinder(CVector3(p2.GetX(), p2.GetY(), 0.004), CQuaternion(), radius, 0.01, color);
+		}
+		// Draw connecting lines between consecutive points
+		for(size_t i = 1; i < points.size(); i++) {
+			const CVector2& pPrev = points[i-1];
+			const CVector2& pCurr = points[i];
+			CRay3 ray(CVector3(pPrev.GetX(), pPrev.GetY(), 0.01), CVector3(pCurr.GetX(), pCurr.GetY(), 0.01));
+			DrawRay(ray, CColor::MAGENTA, 1.0);
+		}
+	}
+
 	if(loopFunctions.DrawTargetRays == 1) DrawTargetRays();
 }
 
@@ -227,11 +258,12 @@ void CPFA_qt_user_functions::DrawGrid() {
 	const size_t gridWidth = loopFunctions.GridWidth;
 	const size_t gridHeight = loopFunctions.GridHeight;
 	
-	// Get arena bounds
-	const argos::Real arenaMinX = -6.0;  // For 12x12 arena
-	const argos::Real arenaMaxX = 6.0;
-	const argos::Real arenaMinY = -6.0;
-	const argos::Real arenaMaxY = 6.0;
+	// Get arena bounds dynamically from simulator
+	const argos::CVector3 arenaSize = CSimulator::GetInstance().GetSpace().GetArenaSize();
+	const argos::Real arenaMinX = -arenaSize.GetX() / 2.0;
+	const argos::Real arenaMaxX =  arenaSize.GetX() / 2.0;
+	const argos::Real arenaMinY = -arenaSize.GetY() / 2.0;
+	const argos::Real arenaMaxY =  arenaSize.GetY() / 2.0;
 	const argos::Real arenaWidth = arenaMaxX - arenaMinX;
 	const argos::Real arenaHeight = arenaMaxY - arenaMinY;
 	
@@ -258,34 +290,34 @@ void CPFA_qt_user_functions::DrawGrid() {
 	}
 	
 	// Draw grid points (cell centers)
-	for(size_t i = 0; i < gridWidth; i++) {
-		for(size_t j = 0; j < gridHeight; j++) {
-			// Convert grid indices to world coordinates (center of each cell)
-			argos::Real worldX = arenaMinX + (i + 0.5) * cellSizeX;
-			argos::Real worldY = arenaMinY + (j + 0.5) * cellSizeY;
+	// for(size_t i = 0; i < gridWidth; i++) {
+	// 	for(size_t j = 0; j < gridHeight; j++) {
+	// 		// Convert grid indices to world coordinates (center of each cell)
+	// 		argos::Real worldX = arenaMinX + (i + 0.5) * cellSizeX;
+	// 		argos::Real worldY = arenaMinY + (j + 0.5) * cellSizeY;
 			
-			// Get visit count for this cell
-			argos::CVector2 cellCenter(worldX, worldY);
-			// int visitCount = loopFunctions.getGridVisitCount(cellCenter);
+	// 		// Get visit count for this cell
+	// 		argos::CVector2 cellCenter(worldX, worldY);
+	// 		// int visitCount = loopFunctions.getGridVisitCount(cellCenter);
 			
-			// Color based on visit count
-			CColor pointColor;
-			// if(visitCount == 0) {
-			// 	pointColor = CColor::BLUE;  // Unvisited
-			// } else if(visitCount <= 2) {
-			// 	pointColor = CColor::CYAN;  // Lightly visited
-			// } else if(visitCount <= 5) {
-			// 	pointColor = CColor::GREEN; // Moderately visited
-			// } else if(visitCount <= 10) {
-			// 	pointColor = CColor::YELLOW; // Heavily visited
-			// } else {
-			// 	pointColor = CColor::RED;   // Very heavily visited
-			// }
-			pointColor = CColor::RED;
-			// Draw small cylinder at grid point
-			DrawCylinder(CVector3(worldX, worldY, 0.002), CQuaternion(), 0.02, 0.01, pointColor);
-		}
-	}
+	// 		// Color based on visit count
+	// 		CColor pointColor;
+	// 		// if(visitCount == 0) {
+	// 		// 	pointColor = CColor::BLUE;  // Unvisited
+	// 		// } else if(visitCount <= 2) {
+	// 		// 	pointColor = CColor::CYAN;  // Lightly visited
+	// 		// } else if(visitCount <= 5) {
+	// 		// 	pointColor = CColor::GREEN; // Moderately visited
+	// 		// } else if(visitCount <= 10) {
+	// 		// 	pointColor = CColor::YELLOW; // Heavily visited
+	// 		// } else {
+	// 		// 	pointColor = CColor::RED;   // Very heavily visited
+	// 		// }
+	// 		pointColor = CColor::RED;
+	// 		// Draw small cylinder at grid point
+	// 		DrawCylinder(CVector3(worldX, worldY, 0.002), CQuaternion(), 0.02, 0.01, pointColor);
+	// 	}
+	// }
 }
 
 REGISTER_QTOPENGL_USER_FUNCTIONS(CPFA_qt_user_functions, "CPFA_qt_user_functions")

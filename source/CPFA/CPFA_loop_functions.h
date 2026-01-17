@@ -74,21 +74,41 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		void exportGridToCSV(const std::string& filename);
 		void exportVisitedPositionsToCSV(const std::string& filename);
 		void exportFoodLocationsToCSV(const std::string& filename);
-		void exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const argos::CVector2& targetPosition);
+		void exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const std::vector<argos::CVector2>& centerPoints, const argos::CVector2& targetPosition);
+		/* Spiral overlay helpers for live visualization */
+		void SetSpiralOverlayPoints(const std::string& robotId, const std::vector<argos::CVector2>& points);
+		void ClearSpiralOverlayPoints(const std::string& robotId);
+		std::map<std::string, std::vector<argos::CVector2>> SpiralOverlayPoints;
+		
+		/* Search trajectory helpers for live visualization */
+		void AddSearchTrajectoryPoint(const std::string& robotId, const argos::CVector2& point);
+		void ClearSearchTrajectory(const std::string& robotId);
+		std::map<std::string, std::vector<argos::CVector2>> SearchTrajectories;
 		bool createDirectoryIfNotExists(const std::string& dirPath);
 		void clearHeatmapData();
 		void clearDotplotData();
 		void clearTrajectoryData();
 		void clearFoodData();
+		void clearMilestoneData();
 		void incrementRejectedLocationCounter();
 		std::vector<argos::CVector2> VisitedPositions;
 		std::vector<argos::CVector2> ClusterCenters;
+		size_t totalVisitedPositionsCount = 0;
+		size_t timesreceivedRobotMemories = 0;
+
+		/* Resource collection milestone tracking */
+		std::vector<argos::Real> resourceCollectionMilestones;  // Times when each 10% milestone is reached
+		size_t lastMilestone = 0;  // Track the last milestone reached (0-10)
+		void recordResourceMilestone(size_t currentScore);
+		void exportResourceMilestonesToCSV(const std::string& filename);
+
 	protected:
 
 		void setScore(double s);
 
 		argos::CRandom::CRNG* RNG;
                 size_t NumDistributedFood;
+		size_t FoodTarget88Percent; // 88% of total food items to complete simulation
 		size_t MaxSimTime;
 		size_t ResourceDensityDelay;
 		size_t RandomSeed;

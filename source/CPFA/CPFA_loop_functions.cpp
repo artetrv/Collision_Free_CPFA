@@ -48,14 +48,19 @@ CPFA_loop_functions::CPFA_loop_functions() :
 	SearchRadiusSquared((4.0 * FoodRadius) * (4.0 * FoodRadius)),
 	CameraRadiusSquared(2.25),
 	NumDistributedFood(0),
+	FoodTarget88Percent(0), // Will be calculated after food distribution
 	score(0),
 	PrintFinalScore(0),
-	RejectedLocationCounter(0)
-{}
+	RejectedLocationCounter(0),
+	lastMilestone(0)
+{
+	// Initialize milestone tracking
+	resourceCollectionMilestones.clear();
+}
 
 void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {	
 	
-	// Clear any existing data from previous runs
+	// Clear any existing data from previous runs (except milestone data - that's handled by batch script)
 	clearHeatmapData();
 	clearDotplotData();
 	clearTrajectoryData();
@@ -119,7 +124,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
         ArenaWidth = ArenaSize[0];
         
         // Create the grid with a default cell size of 1 meters
-        create_grid(0.75);
+        create_grid(1.0);
         
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
@@ -148,6 +153,11 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
    NestRadiusSquared = NestRadius*NestRadius;
 	
     SetFoodDistribution();
+    
+    // Calculate 88% of total food items for simulation completion
+    FoodTarget88Percent = static_cast<size_t>(std::ceil(FoodList.size() * 1.0));
+    // argos::LOG << "Food distribution set with " << FoodList.size() << " total food items" << std::endl;
+    // argos::LOG << "Simulation will finish when " << FoodTarget88Percent << " food items (88%) are collected" << std::endl;
   
  ForageList.clear(); 
  last_time_in_minutes=0;
@@ -175,6 +185,15 @@ void CPFA_loop_functions::Reset() {
     Trajectory.clear();
     
     SetFoodDistribution();
+    
+    // Recalculate 88% threshold after reset
+    FoodTarget88Percent = static_cast<size_t>(std::ceil(FoodList.size() * 1.00));
+    // argos::LOG << "Reset: Food distribution set with " << FoodList.size() << " total food items" << std::endl;
+    // argos::LOG << "Reset: Simulation will finish when " << FoodTarget88Percent << " food items (88%) are collected" << std::endl;
+    
+    // Reset milestone tracking
+    resourceCollectionMilestones.clear();
+    lastMilestone = 0;
     
     argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
     argos::CSpace::TMapPerType::iterator it;
@@ -285,14 +304,30 @@ void CPFA_loop_functions::PostStep() {
 bool CPFA_loop_functions::IsExperimentFinished() {
 	bool isFinished = false;
 
+	// Check if 88% of food has been collected
+	// if(score >= FoodTarget88Percent) {
+	// 	isFinished = true;
+	// 	argos::LOG << "Simulation finished: Collected " << score << "/" << FoodList.size() + score << " food items (target: " << FoodTarget88Percent << ", 88%)" << std::endl;
+	// }
+	// Fallback: if all food is collected (100%)
 	if(FoodList.size() == 0) {
 		isFinished = true;
+		
+		// Record 100% milestone if we haven't already
+		if (lastMilestone < 10) {
+			argos::Real currentTime = getSimTimeInSeconds();
+			// Add any missing milestones up to 100%
+			for (size_t m = lastMilestone + 1; m <= 10; m++) {
+				resourceCollectionMilestones.push_back(currentTime);
+				argos::LOG << "Milestone reached: " << (m * 10) << "% of resources collected at time " 
+						   << currentTime << " seconds (final collection)" << std::endl;
+			}
+			lastMilestone = 10;
+		}
+		
+		argos::LOG << "Simulation finished: All food collected (100%)" << std::endl;
 	}
 	// else if(GetSpace().GetSimulationClock() >= MaxSimTime) {
-	// 	isFinished = true;
-	// }
-    //set to collected 88% food and then stop
-    // if(score >= NumDistributedFood){
 	// 	isFinished = true;
 	// }
          
@@ -328,6 +363,17 @@ void CPFA_loop_functions::PostExperiment() {
 	  
      printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
      printf("Total cells visited: %lu / %lu\n", cellsVisited, totalCells);
+	 double avg = totalVisitedPositionsCount / (double)timesreceivedRobotMemories;
+	 printf("Average memories recieved per return: %f\n", avg); //average number of positions received per robot
+	 printf("Total unique positions visited: %lu\n", totalVisitedPositionsCount);
+     
+     // Export resource collection milestones to CSV
+     if (!resourceCollectionMilestones.empty()) {
+         // Create milestone_data directory if it doesn't exist
+         createDirectoryIfNotExists("milestone_data");
+         std::string milestoneFilename = "milestone_data/resource_milestones_" + std::to_string(RandomSeed) + ".csv";
+         exportResourceMilestonesToCSV(milestoneFilename);
+     }
        
                   
     // if (PrintFinalScore == 1) {
@@ -736,6 +782,9 @@ void CPFA_loop_functions::SetTrial(unsigned int v) {
 void CPFA_loop_functions::setScore(double s) {
 	score = s;
     
+    // Record milestone when score changes
+    recordResourceMilestone(static_cast<size_t>(score));
+    
 	if (score >= NumDistributedFood) {
 		PostExperiment();
 	}
@@ -826,6 +875,8 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 	for(const auto& pos : robotMemory) {
 		VisitedPositions.push_back(pos);
 	}
+	totalVisitedPositionsCount += robotMemory.size();
+	timesreceivedRobotMemories++;
 
 
 
@@ -1141,7 +1192,7 @@ void CPFA_loop_functions::clearTrajectoryData() {
     }
 }
 
-void CPFA_loop_functions::exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const argos::CVector2& targetPosition) {
+void CPFA_loop_functions::exportRandomSearchTrajectory(const std::string& robotId, const std::vector<argos::CVector2>& trajectory, const std::vector<argos::CVector2>& centerPoints, const argos::CVector2& targetPosition) {
 	if (trajectory.empty()) return;
 	
 	// Create trajectory_data directory if it doesn't exist
@@ -1155,11 +1206,20 @@ void CPFA_loop_functions::exportRandomSearchTrajectory(const std::string& robotI
 	
 	std::ofstream file(filename.str());
 	if (file.is_open()) {
-		// Write header with target position
-		file << "x,y,target_x,target_y\n";
+		// Write header with target position and point type
+		// point_type: 0 = trajectory point, 1 = center point
+		file << "x,y,target_x,target_y,point_type\n";
+		
+		// Write trajectory points
 		for (const auto& pos : trajectory) {
-			file << pos.GetX() << "," << pos.GetY() << "," << targetPosition.GetX() << "," << targetPosition.GetY() << "\n";
+			file << pos.GetX() << "," << pos.GetY() << "," << targetPosition.GetX() << "," << targetPosition.GetY() << ",0\n";
 		}
+		
+		// Write center points
+		for (const auto& pos : centerPoints) {
+			file << pos.GetX() << "," << pos.GetY() << "," << targetPosition.GetX() << "," << targetPosition.GetY() << ",1\n";
+		}
+		
 		file.close();
 		// argos::LOG << "Exported trajectory for robot " << robotId << " with " << trajectory.size() << " points to " << filename.str() << std::endl;
 	} else {
@@ -1271,4 +1331,118 @@ void CPFA_loop_functions::clearFoodData() {
 	}
 }
 
-REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")
+void CPFA_loop_functions::recordResourceMilestone(size_t currentScore) {
+	if (FoodList.size() == 0) return; // No food to track
+	
+	size_t totalFood = FoodList.size() + currentScore; // Total original food count
+	if (totalFood == 0) return;
+	
+	// Calculate which milestone percentage this score represents
+	double percentage = static_cast<double>(currentScore) / static_cast<double>(totalFood);
+	size_t milestone = static_cast<size_t>(percentage * 10.0); // Convert to 0-10 range
+	
+	// Check if we've reached a new milestone (10%, 20%, 30%, etc.)
+	if (milestone > lastMilestone && milestone <= 10) {
+		// Record the time for all milestones between lastMilestone and current milestone
+		for (size_t m = lastMilestone + 1; m <= milestone; m++) {
+			if (m <= 10) { // Don't go beyond 100%
+				argos::Real currentTime = getSimTimeInSeconds();
+				resourceCollectionMilestones.push_back(currentTime);
+				
+				argos::LOG << "Milestone reached: " << (m * 10) << "% of resources collected at time " 
+						   << currentTime << " seconds (score: " << currentScore << "/" << totalFood << ")" << std::endl;
+			}
+		}
+		lastMilestone = milestone;
+	}
+}
+
+void CPFA_loop_functions::exportResourceMilestonesToCSV(const std::string& filename) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		argos::LOGERR << "Failed to open file for resource milestones export: " << filename << std::endl;
+		return;
+	}
+	
+	// Write header with metadata
+	file << "# Resource Collection Milestones - Random Seed: " << RandomSeed << std::endl;
+	file << "# Food Distribution: " << FoodDistribution << std::endl;
+	file << "# Total Food Items: " << (FoodList.size() + score) << std::endl;
+	file << "# Algorithm Mode: " << SearchAlgorithmMode << std::endl;
+	file << "# Number of Robots: " << Num_robots << std::endl;
+	file << "# === MILESTONE DATA ===" << std::endl;
+	file << "milestone_percent,time_seconds" << std::endl;
+	
+	// Write milestone data
+	for (size_t i = 0; i < resourceCollectionMilestones.size(); i++) {
+		size_t milestonePercent = (i + 1) * 10; // 10%, 20%, 30%, etc.
+		file << milestonePercent << "," << resourceCollectionMilestones[i] << std::endl;
+	}
+	
+	file.close();
+	argos::LOG << "Resource milestones exported to: " << filename << " (" << resourceCollectionMilestones.size() << " milestones)" << std::endl;
+}
+
+void CPFA_loop_functions::clearMilestoneData() {
+	const std::string milestoneDir = "milestone_data";
+	
+	// Check if directory exists
+	struct stat info;
+	if (stat(milestoneDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+		// Directory doesn't exist, nothing to clear
+		return;
+	}
+	
+	// Open directory
+	DIR* dir = opendir(milestoneDir.c_str());
+	if (dir == nullptr) {
+		argos::LOGERR << "Failed to open milestone_data directory for cleaning" << std::endl;
+		return;
+	}
+	
+	// Read directory entries and delete CSV files
+	struct dirent* entry;
+	int filesDeleted = 0;
+	
+	while ((entry = readdir(dir)) != nullptr) {
+		// Skip . and .. entries
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+			continue;
+		}
+		
+		// Check if it's a CSV file
+		std::string filename = entry->d_name;
+		if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".csv") {
+			std::string fullPath = milestoneDir + "/" + filename;
+			if (remove(fullPath.c_str()) == 0) {
+				filesDeleted++;
+			} else {
+				argos::LOGERR << "Failed to delete: " << fullPath << std::endl;
+			}
+		}
+	}
+	
+	closedir(dir);
+	
+	if (filesDeleted > 0) {
+		argos::LOG << "Cleared milestone data: deleted " << filesDeleted << " CSV files" << std::endl;
+	} else {
+		argos::LOG << "Milestone data directory is already clean" << std::endl;
+	}
+}
+
+void CPFA_loop_functions::SetSpiralOverlayPoints(const std::string& robotId, const std::vector<argos::CVector2>& points) {
+	SpiralOverlayPoints[robotId] = points;
+}
+
+void CPFA_loop_functions::ClearSpiralOverlayPoints(const std::string& robotId) {
+    SpiralOverlayPoints.erase(robotId);
+}
+
+void CPFA_loop_functions::AddSearchTrajectoryPoint(const std::string& robotId, const argos::CVector2& point) {
+    SearchTrajectories[robotId].push_back(point);
+}
+
+void CPFA_loop_functions::ClearSearchTrajectory(const std::string& robotId) {
+    SearchTrajectories.erase(robotId);
+}REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

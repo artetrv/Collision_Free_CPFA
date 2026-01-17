@@ -54,6 +54,7 @@ class CPFA_controller : public BaseController {
 		/* Spiral search variables */
 		std::vector<argos::CVector2> spiralSearchLocations;
 		std::vector<argos::CVector2> visitedSpiralLocations;
+		std::vector<argos::CVector2> spiralCenterPoints; // Store center points of spiral search
 		size_t currentSpiralIndex;
 		bool isUsingSpiralSearch;
 		
@@ -134,6 +135,7 @@ class CPFA_controller : public BaseController {
 		argos::Real GetPoissonCDF(argos::Real k, argos::Real lambda);
 
 		void UpdateTargetRayList();
+		void AddSpiralSearchLocationsAroundPoint(const argos::CVector2& centerPoint);
   
 		CVector2 previous_position;
 
