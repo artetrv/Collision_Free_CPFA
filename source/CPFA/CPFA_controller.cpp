@@ -24,11 +24,11 @@ CPFA_controller::CPFA_controller() :
     last_time_in_seconds(0),
 	// ---- NEW defaults ----
     s_WindowSize(120),
-    sw_sample_pos(6),   // real ~0.25 s/sample at 32 TPS (4)
-    sw_waitTicks(1),
-    sw_CongRatioOn(1.5), //1.6
-    sw_bad_samples(3), // ~1.25 s of sustained congestion
-    sw_congEps(0.03), //(0.2)
+    sw_sample_pos(4),   // real ~0.25 s/sample at 32 TPS (4)
+    sw_waitTicks(2),
+    sw_CongRatioOn(2), //1.6
+    sw_bad_samples(10), // ~1.25 s of sustained congestion
+    sw_congEps(0.02), //(0.2)
     sum_window_segments(0.0),
     sw_LastCongSampleTick(0),
     sw_badSample_counter(0),
@@ -302,8 +302,6 @@ void CPFA_controller::SetLoopFunctions(CPFA_loop_functions* lf) {
 }
 
 void CPFA_controller::Congested() {
-     // One-tick action: drop carried resource due to congestion, then switch to SEARCHING
-
     // 1) Re-add item at current position (drop)
     LoopFunctions->FoodList.push_back(GetPosition());
     LoopFunctions->FoodColoringList.push_back(argos::CColor::RED);
@@ -311,70 +309,80 @@ void CPFA_controller::Congested() {
     // 2) No longer carrying
     isHoldingFood = false;
 
-	// 1b) define restricted search rectangle based on drop position and arena bounds
-   {
-       argos::Real px = GetPosition().GetX();
-       argos::Real py = GetPosition().GetY();
-       argos::Real Xmin = ForageRangeX.GetMin();
-       argos::Real Xmax = ForageRangeX.GetMax();
-       argos::Real Ymin = ForageRangeY.GetMin();
-       argos::Real Ymax = ForageRangeY.GetMax();
+    bool usingSF = false;  
 
-       if(px >= 0.0) { zoneXMin = px; zoneXMax = Xmax; }
-       else          { zoneXMin = Xmin; zoneXMax = px; }
+    isInformed = false;
+    isUsingSiteFidelity = false;
+    isGivingUpSearch = false;
 
-       if(py >= 0.0) { zoneYMin = py; zoneYMax = Ymax; }
-       else          { zoneYMin = Ymin; zoneYMax = py; }
+    argos::Real poissonCDF_sFollowRate =
+        GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfSiteFidelity);
+    argos::Real r2 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
 
-       hasRestrictedZone = true;
-   }
+    bool sfValid =
+    SiteFidelityPosition.GetX() >= ForageRangeX.GetMin() &&
+    SiteFidelityPosition.GetX() <= ForageRangeX.GetMax() &&
+    SiteFidelityPosition.GetY() >= ForageRangeY.GetMin() &&
+    SiteFidelityPosition.GetY() <= ForageRangeY.GetMax();
 
-    // 4) Switch to DEPARTING 
-	// *******
-	// 	argos::Real poissonCDF_sFollowRate = GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfSiteFidelity);
-	//     argos::Real r2 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-	//     if(updateFidelity && poissonCDF_sFollowRate > r2) {
-	// 	    //log_output_stream << "Using site fidelity" << endl;
-	// 	        SetIsHeadingToNest(false);
-	// 	        SetTarget(SiteFidelityPosition);
-	// 	        isInformed = true;
-	//     }
-	// 	*****
-    //   // use pheromone waypoints
-    //   else if(SetTargetPheromone()) {
-    //       //log_output_stream << "Using site pheremone" << endl;
-    //       isInformed = true;
-    //       isUsingSiteFidelity = false;
-    //   }
-       // use random search
-    //   **else {
-    //        //log_output_stream << "Using random search" << endl;
-    //        ** SetRandomSearchLocation();
-    //         **isInformed = false;
-    //        ** isUsingSiteFidelity = false;
-    //   }
-       /* this trip must be uninformed */
-   isInformed = false;
-   isUsingSiteFidelity = false;
-   isGivingUpSearch = false;
-   // Pick a new random target (this will use the restricted zone)
-	SetRandomSearchLocation();
+
+    if(updateFidelity && sfValid && poissonCDF_sFollowRate > r2) {
+        SetIsHeadingToNest(false);
+        SetTarget(SiteFidelityPosition);
+        isInformed = true;
+        isUsingSiteFidelity = true;
+
+        usingSF = true;           
+        hasRestrictedZone = false; 
+
+        if(m_pcLEDs)             
+            m_pcLEDs->SetAllColors(CColor::PURPLE);
+
+        LOG << "[" << GetId() << "] CONGESTED → DEPARTING (SF) at t="
+            << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
+            << " pos=" << GetPosition()
+            << " target=" << SiteFidelityPosition << "\n";  
+    } else {
+        // 1b) define restricted search rectangle based on drop position and arena bounds
+        {   
+            argos::Real px = GetPosition().GetX();
+            argos::Real py = GetPosition().GetY();
+            argos::Real Xmin = ForageRangeX.GetMin();
+            argos::Real Xmax = ForageRangeX.GetMax();
+            argos::Real Ymin = ForageRangeY.GetMin();
+            argos::Real Ymax = ForageRangeY.GetMax();
+
+            if(px >= 0.0) { zoneXMin = px; zoneXMax = Xmax; }
+            else          { zoneXMin = Xmin; zoneXMax = px; }
+
+            if(py >= 0.0) { zoneYMin = py; zoneYMax = Ymax; }
+            else          { zoneYMin = Ymin; zoneYMax = py; }
+
+            hasRestrictedZone = true;
+        }
+
+        SetRandomSearchLocation(); // uses restricted zone like before
+    }
+
     CPFA_state = DEPARTING;
-	SetIsHeadingToNest(false);
-   // 5) Reset congestion detector bookkeeping
+    SetIsHeadingToNest(false);
+
     Cong_ResetWindow();
-	InCongested = false;
+    InCongested = false;
 
- // LEDs + log: restricted departing
-   if(m_pcLEDs)
-       m_pcLEDs->SetAllColors(CColor::RED); // DEPARTING (restricted)
+    // LEDs + log: restricted departing (ONLY for random-search case)
+    if(!usingSF) {   
+        if(m_pcLEDs)
+            m_pcLEDs->SetAllColors(CColor::RED); // DEPARTING (restricted)
 
-   LOG << "[" << GetId() << "] RESTRICTED TRIP: ENTER DEPARTING at t="
-       << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
-       << " pos=" << GetPosition()
-       << " zone=[" << zoneXMin << "," << zoneXMax
-       << "]x[" << zoneYMin << "," << zoneYMax << "]\n";
+        LOG << "[" << GetId() << "] RESTRICTED TRIP: ENTER DEPARTING (RS) at t="
+            << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
+            << " pos=" << GetPosition()
+            << " zone=[" << zoneXMin << "," << zoneXMax
+            << "]x[" << zoneYMin << "," << zoneYMax << "]\n";
+    }
 }
+
 //resets all congestion track history for the next cycle
 void CPFA_controller::Cong_ResetWindow() {
     sw_positions.clear();
@@ -477,6 +485,10 @@ void CPFA_controller::Departing()
         {
             // Switch to SEARCHING
             Stop();
+            //debug
+            LOG << "[" << GetId() << "] DEPARTING → SEARCHING (restricted) dist="
+    << distance << " tol=" << tolerance << "\n";
+
             CPFA_state = SEARCHING;
             SearchTime = 0;
             travelingTime += SimulationTick() - startTime;
@@ -578,6 +590,14 @@ void CPFA_controller::Departing()
         SearchTime = 0;
         travelingTime += SimulationTick() - startTime;
         startTime = SimulationTick();
+
+        //  (debug + LED)
+        if(m_pcLEDs){
+            m_pcLEDs->SetAllColors(CColor::CYAN); 
+         }
+            LOG << "[" << GetId() << "] DEPARTING → SEARCHING (informed"
+            << (isUsingSiteFidelity ? "/SF" : "") << ") dist="
+            << distance << " tol=" << tolerance << "\n";
 
         if(isUsingSiteFidelity)
         {
