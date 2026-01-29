@@ -8,7 +8,7 @@ from matplotlib.widgets import Button
 import numpy as np
 
 # Configuration: Arena size (n x n), plot limits will be -n/2 to n/2
-ARENA_SIZE = 8
+ARENA_SIZE = 14
 
 class TrajectoryViewer:
     def __init__(self, trajectory_files, arena_size=ARENA_SIZE):

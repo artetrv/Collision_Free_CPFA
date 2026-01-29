@@ -210,7 +210,7 @@ class LiveDotplotViewer:
                     self.ax.grid(True, alpha=0.3)
                     
                     # Set axis limits to match arena size (10x10 arena = -5 to +5)
-                    arena_half_size = 4
+                    arena_half_size = 6
                     self.ax.set_xlim(-arena_half_size, arena_half_size)
                     self.ax.set_ylim(-arena_half_size, arena_half_size)
                     

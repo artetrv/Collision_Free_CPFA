@@ -99,7 +99,7 @@ class LiveHeatmapViewer:
                 
                 # For 10x10 arena: world extends from -5 to +5, grid lines at 1m intervals
                 # Grid cells cover the entire arena regardless of grid resolution
-                arena_half_size = 4  # Half of 10x10 arena
+                arena_half_size = 6  # Half of 14x14 arena
                 
                 # Create the heatmap with extent from -5 to +5
                 self.im = self.ax.imshow(grid_data, cmap=self.cmap, 
