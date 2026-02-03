@@ -326,11 +326,13 @@ void CPFA_controller::Congested() {
     SiteFidelityPosition.GetY() <= ForageRangeY.GetMax();
 
 
-    if(updateFidelity && sfValid && poissonCDF_sFollowRate > r2) {
+    if(r2 < 0.35 * poissonCDF_sFollowRate && sfValid) {
         SetIsHeadingToNest(false);
         SetTarget(SiteFidelityPosition);
         isInformed = true;
         isUsingSiteFidelity = true;
+
+         SearchTime = -25;
 
         usingSF = true;           
         hasRestrictedZone = false; 
@@ -545,7 +547,7 @@ void CPFA_controller::Departing()
 
         }
 
-        return; // ← critical
+        return; 
     }
 
     /* ========================================================
@@ -587,7 +589,8 @@ void CPFA_controller::Departing()
     if(isInformed && distance < tolerance)
     {
         CPFA_state = SEARCHING;
-        SearchTime = 0;
+        // SearchTime = 0;
+        if(SearchTime >= 0) SearchTime = 0;
         travelingTime += SimulationTick() - startTime;
         startTime = SimulationTick();
 
@@ -595,9 +598,9 @@ void CPFA_controller::Departing()
         if(m_pcLEDs){
             m_pcLEDs->SetAllColors(CColor::CYAN); 
          }
-            LOG << "[" << GetId() << "] DEPARTING → SEARCHING (informed"
-            << (isUsingSiteFidelity ? "/SF" : "") << ") dist="
-            << distance << " tol=" << tolerance << "\n";
+            // LOG << "[" << GetId() << "] DEPARTING → SEARCHING (informed"
+            // << (isUsingSiteFidelity ? "/SF" : "") << ") dist="
+            // << distance << " tol=" << tolerance << "\n";
 
         if(isUsingSiteFidelity)
         {
@@ -647,6 +650,7 @@ void CPFA_controller::Searching()
             if(cand.GetY() < zoneYMin) cand.SetY(zoneYMin);
             else if(cand.GetY() > zoneYMax) cand.SetY(zoneYMax);
 
+            hasRestrictedZone = false;  // ADD THIS LINE
             SetTarget(cand);
             return;
         }

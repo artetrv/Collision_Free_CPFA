@@ -28,10 +28,10 @@ ARGOS_CMAKE_DIR:PATH=/usr/local/share/argos3/cmake
 ARGOS_FORCE_NO_QTOPENGL:BOOL=OFF
 
 //Path of the headers needed for ARGoS
-ARGOS_INCLUDE_DIRS:STRING=/usr/local/include;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include;/opt/homebrew/include;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework;/opt/homebrew/include/lua
+ARGOS_INCLUDE_DIRS:STRING=/usr/local/include;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include;/opt/homebrew/include;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework;/opt/homebrew/include/lua;/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework
 
 //The linker flags to compile ARGoS code
-ARGOS_LDFLAGS:STRING=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib
+ARGOS_LDFLAGS:STRING=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd;/opt/homebrew/lib/libfreeimage.dylib;/opt/homebrew/lib/libfreeimageplus.dylib;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets;/opt/homebrew/lib/liblua5.4.dylib
 
 //Path to a library.
 ARGOS_LIBRARY:FILEPATH=/usr/local/lib/argos3/libargos3core_simulator.dylib
@@ -42,7 +42,7 @@ ARGOS_LIBRARY_DIR:STRING=/usr/local/lib/argos3
 ARGOS_QTOPENGL_FOUND:BOOL=ON
 
 //Include directories for Qt-OpenGL components
-ARGOS_QTOPENGL_INCLUDE_DIRS:STRING=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtCore.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtGui.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtDBus.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGLWidgets.framework;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework/Headers;/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework
+ARGOS_QTOPENGL_INCLUDE_DIRS:STRING=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Headers;/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework
 
 //Libraries for Qt-OpenGL components
 ARGOS_QTOPENGL_LIBRARIES:STRING=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework;/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework;Qt6::Widgets;Qt6::Gui;Qt6::OpenGLWidgets
@@ -59,15 +59,14 @@ CMAKE_ADDR2LINE:FILEPATH=CMAKE_ADDR2LINE-NOTFOUND
 //Path to a program.
 CMAKE_AR:FILEPATH=/usr/bin/ar
 
-//Choose the type of build, options are: None Debug Release RelWithDebInfo
-// MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=Release
+//No help, variable specified on the command line.
+CMAKE_BUILD_TYPE:STRING=Debug
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
-//CXX compiler
-CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++
+//No help, variable specified on the command line.
+CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++
 
 //Flags used by the CXX compiler during all build types.
 CMAKE_CXX_FLAGS:STRING=
@@ -84,8 +83,8 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 //Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
-//C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+//No help, variable specified on the command line.
+CMAKE_C_COMPILER:FILEPATH=/usr/bin/clang
 
 //Flags used by the C compiler during all build types.
 CMAKE_C_FLAGS:STRING=
@@ -120,8 +119,8 @@ CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
 //Flags used by the linker during RELWITHDEBINFO builds.
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
-//Enable/Disable output of compile commands during generation.
-CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
+//No help, variable specified on the command line.
+CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
 
 //Value Computed by CMake.
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles/pkgRedirects
@@ -237,6 +236,9 @@ CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
 CMAKE_PROJECT_NAME:STATIC=CPFA-ARGoS
+
+//Value Computed by CMake
+CMAKE_PROJECT_SPDX_LICENSE:STATIC=
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION:STATIC=
@@ -401,28 +403,28 @@ QT_ADDITIONAL_PACKAGES_PREFIX_PATH:STRING=
 Qt6CorePrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6CorePrivate
 
 //The directory containing a CMake configuration file for Qt6CoreTools.
-Qt6CoreTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6CoreTools
+Qt6CoreTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6CoreTools
 
 //The directory containing a CMake configuration file for Qt6Core.
-Qt6Core_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6Core
+Qt6Core_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6Core
 
 //The directory containing a CMake configuration file for Qt6DBusPrivate.
 Qt6DBusPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6DBusPrivate
 
 //The directory containing a CMake configuration file for Qt6DBusTools.
-Qt6DBusTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6DBusTools
+Qt6DBusTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6DBusTools
 
 //The directory containing a CMake configuration file for Qt6DBus.
-Qt6DBus_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6DBus
+Qt6DBus_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6DBus
 
 //The directory containing a CMake configuration file for Qt6GuiPrivate.
 Qt6GuiPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6GuiPrivate
 
 //The directory containing a CMake configuration file for Qt6GuiTools.
-Qt6GuiTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6GuiTools
+Qt6GuiTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6GuiTools
 
 //The directory containing a CMake configuration file for Qt6Gui.
-Qt6Gui_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6Gui
+Qt6Gui_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6Gui
 
 //The directory containing a CMake configuration file for Qt6OpenGLPrivate.
 Qt6OpenGLPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6OpenGLPrivate
@@ -431,22 +433,22 @@ Qt6OpenGLPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6OpenGLPriva
 Qt6OpenGLWidgetsPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6OpenGLWidgetsPrivate
 
 //The directory containing a CMake configuration file for Qt6OpenGLWidgets.
-Qt6OpenGLWidgets_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6OpenGLWidgets
+Qt6OpenGLWidgets_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6OpenGLWidgets
 
 //The directory containing a CMake configuration file for Qt6OpenGL.
-Qt6OpenGL_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6OpenGL
+Qt6OpenGL_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6OpenGL
 
 //The directory containing a CMake configuration file for Qt6WidgetsPrivate.
 Qt6WidgetsPrivate_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6WidgetsPrivate
 
 //The directory containing a CMake configuration file for Qt6WidgetsTools.
-Qt6WidgetsTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6WidgetsTools
+Qt6WidgetsTools_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6WidgetsTools
 
 //The directory containing a CMake configuration file for Qt6Widgets.
-Qt6Widgets_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6Widgets
+Qt6Widgets_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6Widgets
 
 //The directory containing a CMake configuration file for Qt6.
-Qt6_DIR:PATH=/opt/homebrew/Cellar/qt/6.9.2/lib/cmake/Qt6
+Qt6_DIR:PATH=/opt/homebrew/Cellar/qt/6.10.1/lib/cmake/Qt6
 
 //Path to a program.
 Vulkan_GLSLANG_VALIDATOR_EXECUTABLE:FILEPATH=Vulkan_GLSLANG_VALIDATOR_EXECUTABLE-NOTFOUND
@@ -485,9 +487,9 @@ CMAKE_CACHEFILE_DIR:INTERNAL=/Users/artemisatrevino/argos3/Collision_Free_CPFA/b
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=4
 //Minor version of cmake used to create the current loaded cache
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=1
+CMAKE_CACHE_MINOR_VERSION:INTERNAL=2
 //Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=1
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=3
 //ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
@@ -828,6 +830,8 @@ QT_FEATURE_concatenatetablesproxymodel:INTERNAL=ON
 QT_FEATURE_concurrent:INTERNAL=ON
 //Qt feature: contextmenu (from target Qt6::Widgets)
 QT_FEATURE_contextmenu:INTERNAL=ON
+//Qt feature: copy_file_range (from target Qt6::Core)
+QT_FEATURE_copy_file_range:INTERNAL=OFF
 //Qt feature: cpp_winrt (from target Qt6::Core)
 QT_FEATURE_cpp_winrt:INTERNAL=OFF
 //Qt feature: cross_compile (from target Qt6::Core)
@@ -845,7 +849,7 @@ QT_FEATURE_cxx17_filesystem:INTERNAL=ON
 //Qt feature: cxx20 (from target Qt6::Core)
 QT_FEATURE_cxx20:INTERNAL=OFF
 //Qt feature: cxx20_format (from target Qt6::Core)
-QT_FEATURE_cxx20_format:INTERNAL=OFF
+QT_FEATURE_cxx20_format:INTERNAL=ON
 //Qt feature: cxx23_stacktrace (from target Qt6::Core)
 QT_FEATURE_cxx23_stacktrace:INTERNAL=OFF
 //Qt feature: cxx2a (from target Qt6::Core)
@@ -916,6 +920,8 @@ QT_FEATURE_easingcurve:INTERNAL=ON
 QT_FEATURE_effects:INTERNAL=ON
 //Qt feature: egl (from target Qt6::Gui)
 QT_FEATURE_egl:INTERNAL=OFF
+//Qt feature: egl_extension_platform_wayland (from target Qt6::Gui)
+QT_FEATURE_egl_extension_platform_wayland:INTERNAL=OFF
 //Qt feature: egl_x11 (from target Qt6::Gui)
 QT_FEATURE_egl_x11:INTERNAL=OFF
 //Qt feature: eglfs (from target Qt6::Gui)
@@ -1064,6 +1070,8 @@ QT_FEATURE_itemmodel:INTERNAL=ON
 QT_FEATURE_itemviews:INTERNAL=ON
 //Qt feature: jalalicalendar (from target Qt6::Core)
 QT_FEATURE_jalalicalendar:INTERNAL=ON
+//Qt feature: jemalloc (from target Qt6::Core)
+QT_FEATURE_jemalloc:INTERNAL=OFF
 //Qt feature: journald (from target Qt6::Core)
 QT_FEATURE_journald:INTERNAL=OFF
 //Qt feature: jpeg (from target Qt6::Gui)
@@ -1163,7 +1171,7 @@ QT_FEATURE_openssl:INTERNAL=ON
 //Qt feature: openssl_hash (from target Qt6::Core)
 QT_FEATURE_openssl_hash:INTERNAL=OFF
 //Qt feature: openssl_linked (from target Qt6::Core)
-QT_FEATURE_openssl_linked:INTERNAL=OFF
+QT_FEATURE_openssl_linked:INTERNAL=ON
 //Qt feature: opensslv11 (from target Qt6::Core)
 QT_FEATURE_opensslv11:INTERNAL=OFF
 //Qt feature: opensslv30 (from target Qt6::Core)
@@ -1249,7 +1257,7 @@ QT_FEATURE_reduce_relocations:INTERNAL=OFF
 //Qt feature: regularexpression (from target Qt6::Core)
 QT_FEATURE_regularexpression:INTERNAL=ON
 //Qt feature: relocatable (from target Qt6::Core)
-QT_FEATURE_relocatable:INTERNAL=OFF
+QT_FEATURE_relocatable:INTERNAL=ON
 //Qt feature: relro_now_linker (from target Qt6::Core)
 QT_FEATURE_relro_now_linker:INTERNAL=OFF
 //Qt feature: renameat2 (from target Qt6::Core)
@@ -1484,6 +1492,38 @@ QT_FEATURE_wasm_jspi:INTERNAL=OFF
 QT_FEATURE_wasm_simd128:INTERNAL=OFF
 //Qt feature: wayland (from target Qt6::Gui)
 QT_FEATURE_wayland:INTERNAL=OFF
+//Qt feature: wayland_brcm (from target Qt6::Gui)
+QT_FEATURE_wayland_brcm:INTERNAL=OFF
+//Qt feature: wayland_client (from target Qt6::Gui)
+QT_FEATURE_wayland_client:INTERNAL=OFF
+//Qt feature: wayland_client_fullscreen_shell_v1 (from target Qt6::Gui)
+QT_FEATURE_wayland_client_fullscreen_shell_v1:INTERNAL=OFF
+//Qt feature: wayland_client_primary_selection (from target Qt6::Gui)
+QT_FEATURE_wayland_client_primary_selection:INTERNAL=ON
+//Qt feature: wayland_client_wl_shell (from target Qt6::Gui)
+QT_FEATURE_wayland_client_wl_shell:INTERNAL=OFF
+//Qt feature: wayland_client_xdg_shell (from target Qt6::Gui)
+QT_FEATURE_wayland_client_xdg_shell:INTERNAL=OFF
+//Qt feature: wayland_datadevice (from target Qt6::Gui)
+QT_FEATURE_wayland_datadevice:INTERNAL=ON
+//Qt feature: wayland_dmabuf_server_buffer (from target Qt6::Gui)
+QT_FEATURE_wayland_dmabuf_server_buffer:INTERNAL=OFF
+//Qt feature: wayland_drm_egl_server_buffer (from target Qt6::Gui)
+QT_FEATURE_wayland_drm_egl_server_buffer:INTERNAL=OFF
+//Qt feature: wayland_egl (from target Qt6::Gui)
+QT_FEATURE_wayland_egl:INTERNAL=OFF
+//Qt feature: wayland_libhybris_egl_server_buffer (from target
+// Qt6::Gui)
+QT_FEATURE_wayland_libhybris_egl_server_buffer:INTERNAL=OFF
+//Qt feature: wayland_server (from target Qt6::Gui)
+QT_FEATURE_wayland_server:INTERNAL=OFF
+//Qt feature: wayland_shm_emulation_server_buffer (from target
+// Qt6::Gui)
+QT_FEATURE_wayland_shm_emulation_server_buffer:INTERNAL=OFF
+//Qt feature: wayland_vulkan_server_buffer (from target Qt6::Gui)
+QT_FEATURE_wayland_vulkan_server_buffer:INTERNAL=OFF
+//Qt feature: waylandscanner (from target Qt6::Gui)
+QT_FEATURE_waylandscanner:INTERNAL=OFF
 //Qt feature: whatsthis (from target Qt6::Gui)
 QT_FEATURE_whatsthis:INTERNAL=ON
 //Qt feature: wheelevent (from target Qt6::Gui)
@@ -1492,6 +1532,8 @@ QT_FEATURE_wheelevent:INTERNAL=ON
 QT_FEATURE_widgets:INTERNAL=ON
 //Qt feature: widgettextcontrol (from target Qt6::Widgets)
 QT_FEATURE_widgettextcontrol:INTERNAL=ON
+//Qt feature: winsdkicu (from target Qt6::Core)
+QT_FEATURE_winsdkicu:INTERNAL=OFF
 //Qt feature: wizard (from target Qt6::Widgets)
 QT_FEATURE_wizard:INTERNAL=ON
 //Qt feature: x86intrin (from target Qt6::Core)

@@ -81,6 +81,9 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings_node, "ClusterWidthY", ClusterWidthY);
 	argos::GetNodeAttribute(settings_node, "FoodRadius", FoodRadius);
     argos::GetNodeAttribute(settings_node, "NestRadius", NestRadius);
+	NestRadiusSquared = NestRadius * NestRadius; 
+	 LOG << "NestRadius=" << NestRadius
+    << " NestRadiusSquared=" << NestRadiusSquared << std::endl;
 	argos::GetNodeAttribute(settings_node, "NestElevation", NestElevation);
     argos::GetNodeAttribute(settings_node, "NestPosition", NestPosition);
     FoodRadiusSquared = FoodRadius*FoodRadius;
@@ -294,7 +297,7 @@ void CPFA_loop_functions::PostExperiment() {
         {
             double collisions_sec = CollisionTime / (2.0 * ticks_per_second);
 
-            std::ofstream dataOutput("results/plot_experiments/plots/Clustered_CPFA_r16_tag80_8by8_quadrant16calis.txt", std::ios::app);
+            std::ofstream dataOutput("results/expSF/trials.txt", std::ios::app);
 
             if(dataOutput.tellp() == 0) {
                 dataOutput << "score,time_seconds,collisions_seconds,seed\n";
