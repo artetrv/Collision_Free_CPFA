@@ -315,24 +315,25 @@ void CPFA_controller::Congested() {
     isUsingSiteFidelity = false;
     isGivingUpSearch = false;
 
-    argos::Real poissonCDF_sFollowRate =
-        GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfSiteFidelity);
+
+    // Calculate distance-based probability for SF
+    // p(d) = (d/k) / (1 + d/k)
+    // - Close to nest (d small) → low probability of SF
+    // - Far from nest (d large) → high probability of SF
+    argos::Real d = (SiteFidelityPosition - LoopFunctions->NestPosition).Length();
+    argos::Real k = LoopFunctions->ArenaWidth * sqrt(2.0) / 2.0;
+    argos::Real p = (d / k) / (1.0 + d / k);
+
     argos::Real r2 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
 
-    bool sfValid =
-    SiteFidelityPosition.GetX() >= ForageRangeX.GetMin() &&
-    SiteFidelityPosition.GetX() <= ForageRangeX.GetMax() &&
-    SiteFidelityPosition.GetY() >= ForageRangeY.GetMin() &&
-    SiteFidelityPosition.GetY() <= ForageRangeY.GetMax();
-
-
-    if(r2 < 0.35 * poissonCDF_sFollowRate && sfValid) {
+    if(r2 < p) {
+        // Use Site Fidelity (SF)
         SetIsHeadingToNest(false);
         SetTarget(SiteFidelityPosition);
         isInformed = true;
         isUsingSiteFidelity = true;
 
-         SearchTime = -25;
+         SearchTime = -20;
 
         usingSF = true;           
         hasRestrictedZone = false; 
@@ -341,9 +342,11 @@ void CPFA_controller::Congested() {
             m_pcLEDs->SetAllColors(CColor::PURPLE);
 
         LOG << "[" << GetId() << "] CONGESTED → DEPARTING (SF) at t="
-            << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
-            << " pos=" << GetPosition()
-            << " target=" << SiteFidelityPosition << "\n";  
+        << (argos::Real)SimulationTick() / SimulationTicksPerSecond()
+        << " pos=" << GetPosition()
+        << " target=" << SiteFidelityPosition 
+        << " d=" << d << " k=" << k << " p=" << p << "\n";
+
     } else {
         // 1b) define restricted search rectangle based on drop position and arena bounds
         {   
@@ -846,14 +849,20 @@ void CPFA_controller::Returning() {
 	    //log_output_stream << "At the nest." << endl;	    
 	 
 	    // use site fidelity
-	    if(updateFidelity && poissonCDF_sFollowRate > r2) {
-		    //log_output_stream << "Using site fidelity" << endl;
-		        SetIsHeadingToNest(false);
-		        SetTarget(SiteFidelityPosition);
-		        isInformed = true;
-	    }
-      // use pheromone waypoints
-      else if(SetTargetPheromone()) {
+	   // Calculate distance-based probability for SF
+        argos::Real d = (SiteFidelityPosition - LoopFunctions->NestPosition).Length();
+        argos::Real k = LoopFunctions->ArenaWidth * sqrt(2.0) / 2.0;
+        argos::Real p = (d / k) / (1.0 + d / k);
+
+        if(updateFidelity && p > r2) {
+            //log_output_stream << "Using site fidelity" << endl;
+            SetIsHeadingToNest(false);
+            SetTarget(SiteFidelityPosition);
+            isInformed = true;
+            isUsingSiteFidelity = true;
+        }
+        // use pheromone waypoints
+        else if(SetTargetPheromone()) {
           //log_output_stream << "Using site pheremone" << endl;
           isInformed = true;
           isUsingSiteFidelity = false;
