@@ -350,16 +350,14 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 
 void CPFA_loop_functions::PostExperiment() {
 	  
-     // Calculate cells visited metric
+     // Calculate cells visited metric by counting non-zero visit counts
      size_t cellsVisited = 0;
-     for(size_t i = 0; i < GridHeight; i++) {
-         for(size_t j = 0; j < GridWidth; j++) {
-             if(Grid[i][j] > 0) {
-                 cellsVisited++;
-             }
+     size_t totalCells = GridWidth * GridHeight;
+     for(size_t cell_id = 0; cell_id < totalCells; cell_id++) {
+         if(gridMemory.get_visit_count(static_cast<int>(cell_id)) > 0) {
+             cellsVisited++;
          }
      }
-     size_t totalCells = GridWidth * GridHeight;
 	  
      printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
      printf("Total cells visited: %lu / %lu\n", cellsVisited, totalCells);
@@ -823,16 +821,16 @@ void CPFA_loop_functions::create_grid(argos::Real cell_size) {
 	GridWidth = static_cast<size_t>(std::ceil(arena_width / cell_size));
 	GridHeight = static_cast<size_t>(std::ceil(arena_height / cell_size));
 	
-	// Initialize the 2D grid with zeros
-	Grid.clear();
-	Grid.resize(GridHeight, std::vector<int>(GridWidth, 0));
+	// Initialize the optimized grid memory with all cells
+	gridMemory.initialize(GridWidth * GridHeight);
 	
 	// Print grid information
-	argos::LOG << "Grid created with parameters:" << std::endl;
+	argos::LOG << "Grid created with parameters (using OptimizedGridMemory with std::set):" << std::endl;
 	argos::LOG << "  Arena size: " << arena_width << " x " << arena_height << std::endl;
 	argos::LOG << "  Cell size: " << cell_size << std::endl;
 	argos::LOG << "  Grid dimensions: " << GridWidth << " x " << GridHeight << " cells" << std::endl;
 	argos::LOG << "  Total cells: " << GridWidth * GridHeight << std::endl;
+	argos::LOG << "  Using self-balancing BST for O(log n) visit count updates" << std::endl;
 	
 	// Print the grid visualization (showing a sample if it's too large)
 	// argos::LOG << "Grid visualization (all cells initialized to 0):" << std::endl;
@@ -909,11 +907,14 @@ void CPFA_loop_functions::receiveRobotMemory(const std::string& robotId, const s
 		grid_x = std::max(0, std::min(grid_x, static_cast<int>(GridWidth - 1)));
 		grid_y = std::max(0, std::min(grid_y, static_cast<int>(GridHeight - 1)));
 		
-		// Increment the grid cell count
-		Grid[grid_y][grid_x]++;
+			// Convert 2D grid coordinates to linear cell_id
+		int cell_id = grid_y * GridWidth + grid_x;
+		
+		// Update the visit count for this cell (O(log n))
+		gridMemory.update_visit(cell_id);
 		
 		// argos::LOG << "  Location " << (i+1) << ": " << location 
-		// 		   << " -> Grid[" << grid_y << "][" << grid_x << "] = " << Grid[grid_y][grid_x] << std::endl;
+		// 		   << " -> cell_id " << cell_id << " visit count = " << gridMemory.get_visit_count(cell_id) << std::endl;
 	}
 	
 	// Optional: Print updated grid section if it's small enough
@@ -956,8 +957,9 @@ int CPFA_loop_functions::getGridVisitCount(argos::CVector2 worldPosition) {
 	grid_x = std::max(0, std::min(grid_x, static_cast<int>(GridWidth - 1)));
 	grid_y = std::max(0, std::min(grid_y, static_cast<int>(GridHeight - 1)));
 	
-	// Return the visit count for this grid cell
-	return Grid[grid_y][grid_x];
+	// Convert 2D grid coordinates to linear cell_id and return visit count
+	int cell_id = grid_y * GridWidth + grid_x;
+	return gridMemory.get_visit_count(cell_id);
 }
 
 void CPFA_loop_functions::exportGridToCSV(const std::string& filename) {
@@ -983,7 +985,8 @@ void CPFA_loop_functions::exportGridToCSV(const std::string& filename) {
 	for (size_t i = 0; i < GridHeight; i++) {
 		file << i; // Row header
 		for (size_t j = 0; j < GridWidth; j++) {
-			file << "," << Grid[i][j];
+			int cell_id = i * GridWidth + j;
+			file << "," << gridMemory.get_visit_count(cell_id);
 		}
 		file << std::endl;
 	}

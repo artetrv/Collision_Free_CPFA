@@ -6,6 +6,7 @@
 #include <argos3/core/simulator/entity/floor_entity.h>
 #include <source/CPFA/CPFA_controller.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
+#include <source/CPFA/OptimizedGridMemory.h>
 
 using namespace argos;
 using namespace std;
@@ -176,11 +177,14 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		argos::CVector2 NestPosition;
 		
 		/* Grid variables */
-		std::vector<std::vector<int>> Grid;
+		// std::vector<std::vector<int>> Grid;
+		// argos::Real CellSize;
+		// size_t GridWidth;
+		// size_t GridHeight;
+		OptimizedGridMemory gridMemory;
 		argos::Real CellSize;
 		size_t GridWidth;
-		size_t GridHeight;
-		
+		size_t GridHeight;		
 	private:		/* private helper functions */
 		void RandomFoodDistribution();
 		void ClusterFoodDistribution();
