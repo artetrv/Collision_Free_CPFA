@@ -5,7 +5,7 @@
   <!-- ************************* -->
   <framework>
     <system threads="0"/>
-    <experiment length="38400" random_seed="0" ticks_per_second="32"/>
+    <experiment length="28800" random_seed="0" ticks_per_second="32"/>
   </framework>
 
   <!-- *************** -->
@@ -53,7 +53,7 @@
 
          <settings CongWindowSize="100" CongSampleDivisor="4" CongRatioOn="1.6" CongHOn="4" CongEps="0.02"
          ClusterWidthX="4" ClusterWidthY="4" DrawDensityRate="4" DrawIDs="1" DrawTargetRays="0" DrawTrails="0" FoodDistribution="1" FoodItemCount="80" FoodRadius="0.05" MaxSimCounter="1" 
-         MaxSimTimeInSeconds="1200" NestElevation="0.001" NestPosition="0.0, 0.0" NestRadius="0.2" NumberOfClusters="5" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" 
+         MaxSimTimeInSeconds="900" NestElevation="0.001" NestPosition="0.0, 0.0" NestRadius="0.2" NumberOfClusters="5" OutputData="0" PowerlawFoodUnitCount="512" VariableFoodPlacement="0" 
          VaryCapacityFlag = "0" VaryForwardSpeedFlag = "0" NumOfBranches = "4"/>
 
   </loop_functions>
@@ -88,9 +88,9 @@
     
    <!--Distribute foraging robots --> 
 <distribute>
-<position max="3.0, 3.0, 0.0" method="uniform" min="-3.0, -3.0, 0.0"/>
+<position max="0.8, 0.8, 0.0" method="uniform" min="-0.8, -0.8, 0.0"/>
 <orientation mean="0, 0, 0" method="gaussian" std_dev="360, 0, 0"/>
-<entity max_trials="100" quantity="24">
+<entity max_trials="500" quantity="32">
 <foot-bot id="F"><controller config="CPFA"/></foot-bot>
 </entity>
 </distribute>
@@ -112,7 +112,7 @@
   <!-- * Visualization * -->
   <!-- ****************** -->
 
-  <!--
+ 
  <visualization>
 
 <qt-opengl>

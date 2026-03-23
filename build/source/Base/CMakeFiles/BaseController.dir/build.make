@@ -72,7 +72,7 @@ include source/Base/CMakeFiles/BaseController.dir/progress.make
 # Include the compile flags for this target's objects.
 include source/Base/CMakeFiles/BaseController.dir/flags.make
 
-source/Base/BaseController_autogen/timestamp: /opt/homebrew/Cellar/qt/6.10.1/share/qt/libexec/moc
+source/Base/BaseController_autogen/timestamp: /opt/anaconda3/bin/moc
 source/Base/BaseController_autogen/timestamp: source/Base/CMakeFiles/BaseController.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC for target BaseController"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base && /opt/homebrew/bin/cmake -E cmake_autogen /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base/CMakeFiles/BaseController_autogen.dir/AutogenInfo.json Debug
@@ -189,12 +189,30 @@ source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/Ma
 source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
 source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimage.dylib
 source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
-source/Base/libBaseController.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets
 source/Base/libBaseController.dylib: /opt/homebrew/lib/liblua5.4.dylib
-source/Base/libBaseController.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Versions/A/QtWidgets
-source/Base/libBaseController.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Versions/A/QtOpenGL
-source/Base/libBaseController.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Versions/A/QtGui
-source/Base/libBaseController.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Versions/A/QtCore
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libBaseController.dylib: /opt/anaconda3/lib/libQt5Widgets.5.15.2.dylib
+source/Base/libBaseController.dylib: /opt/anaconda3/lib/libQt5Gui.5.15.2.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libBaseController.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libBaseController.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libBaseController.dylib: /opt/anaconda3/lib/libQt5Core.5.15.2.dylib
 source/Base/libBaseController.dylib: source/Base/CMakeFiles/BaseController.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX shared library libBaseController.dylib"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/BaseController.dir/link.txt --verbose=$(VERBOSE)

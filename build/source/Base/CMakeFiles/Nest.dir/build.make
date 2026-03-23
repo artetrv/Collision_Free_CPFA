@@ -72,7 +72,7 @@ include source/Base/CMakeFiles/Nest.dir/progress.make
 # Include the compile flags for this target's objects.
 include source/Base/CMakeFiles/Nest.dir/flags.make
 
-source/Base/Nest_autogen/timestamp: /opt/homebrew/Cellar/qt/6.10.1/share/qt/libexec/moc
+source/Base/Nest_autogen/timestamp: /opt/anaconda3/bin/moc
 source/Base/Nest_autogen/timestamp: source/Base/CMakeFiles/Nest.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC for target Nest"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base && /opt/homebrew/bin/cmake -E cmake_autogen /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base/CMakeFiles/Nest_autogen.dir/AutogenInfo.json Debug
@@ -189,12 +189,30 @@ source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/u
 source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
 source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimage.dylib
 source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
-source/Base/libNest.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets
 source/Base/libNest.dylib: /opt/homebrew/lib/liblua5.4.dylib
-source/Base/libNest.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Versions/A/QtWidgets
-source/Base/libNest.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Versions/A/QtOpenGL
-source/Base/libNest.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Versions/A/QtGui
-source/Base/libNest.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Versions/A/QtCore
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libNest.dylib: /opt/anaconda3/lib/libQt5Widgets.5.15.2.dylib
+source/Base/libNest.dylib: /opt/anaconda3/lib/libQt5Gui.5.15.2.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/Base/libNest.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/Base/libNest.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/Base/libNest.dylib: /opt/anaconda3/lib/libQt5Core.5.15.2.dylib
 source/Base/libNest.dylib: source/Base/CMakeFiles/Nest.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX shared library libNest.dylib"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/Base && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Nest.dir/link.txt --verbose=$(VERBOSE)

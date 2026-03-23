@@ -72,7 +72,7 @@ include source/CPFA/CMakeFiles/CPFA_controller.dir/progress.make
 # Include the compile flags for this target's objects.
 include source/CPFA/CMakeFiles/CPFA_controller.dir/flags.make
 
-source/CPFA/CPFA_controller_autogen/timestamp: /opt/homebrew/Cellar/qt/6.10.1/share/qt/libexec/moc
+source/CPFA/CPFA_controller_autogen/timestamp: /opt/anaconda3/bin/moc
 source/CPFA/CPFA_controller_autogen/timestamp: source/CPFA/CMakeFiles/CPFA_controller.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC for target CPFA_controller"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA && /opt/homebrew/bin/cmake -E cmake_autogen /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_controller_autogen.dir/AutogenInfo.json Debug
@@ -206,14 +206,24 @@ source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/M
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
+source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/liblua5.4.dylib
 source/CPFA/libCPFA_controller.dylib: source/Base/libBaseController.dylib
 source/CPFA/libCPFA_controller.dylib: source/Base/libPheromone.dylib
 source/CPFA/libCPFA_controller.dylib: source/Base/libNest.dylib
-source/CPFA/libCPFA_controller.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets
-source/CPFA/libCPFA_controller.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Versions/A/QtWidgets
-source/CPFA/libCPFA_controller.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Versions/A/QtOpenGL
-source/CPFA/libCPFA_controller.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Versions/A/QtGui
-source/CPFA/libCPFA_controller.dylib: /opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Versions/A/QtCore
 source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libdl.tbd
 source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libpthread.tbd
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
@@ -224,6 +234,9 @@ source/CPFA/libCPFA_controller.dylib: /Library/Developer/CommandLineTools/SDKs/M
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimage.dylib
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/libfreeimageplus.dylib
 source/CPFA/libCPFA_controller.dylib: /opt/homebrew/lib/liblua5.4.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/anaconda3/lib/libQt5Widgets.5.15.2.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/anaconda3/lib/libQt5Gui.5.15.2.dylib
+source/CPFA/libCPFA_controller.dylib: /opt/anaconda3/lib/libQt5Core.5.15.2.dylib
 source/CPFA/libCPFA_controller.dylib: source/CPFA/CMakeFiles/CPFA_controller.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX shared library libCPFA_controller.dylib"
 	cd /Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/CPFA_controller.dir/link.txt --verbose=$(VERBOSE)

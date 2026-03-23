@@ -36,8 +36,6 @@
 		"GL_SILENCE_DEPRECATION",
 		"QT_CORE_LIB",
 		"QT_GUI_LIB",
-		"QT_OPENGLWIDGETS_LIB",
-		"QT_OPENGL_LIB",
 		"QT_WIDGETS_LIB"
 	],
 	"MOC_DEPEND_FILTERS" : 
@@ -54,7 +52,6 @@
 		"/Users/artemisatrevino/argos3/Collision_Free_CPFA",
 		"/opt/homebrew/include",
 		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework",
-		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers",
 		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtWidgets.framework",
@@ -69,38 +66,34 @@
 		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.9.2/lib/QtOpenGL.framework",
 		"/opt/homebrew/include/lua",
-		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework/Headers",
-		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework",
-		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source",
-		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework",
-		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtWidgets.framework",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtCore.framework",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtGui.framework",
+		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework/Headers",
+		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtDBus.framework",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGLWidgets.framework",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework/Headers",
 		"/opt/homebrew/Cellar/qt/6.10.1/lib/QtOpenGL.framework",
-		"/opt/homebrew/Cellar/qt/6.10.1/share/qt/mkspecs/macx-clang",
-		"/opt/homebrew/Cellar/qt/6.10.1/include",
+		"/Users/artemisatrevino/argos3/Collision_Free_CPFA/source",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/GLUT.framework",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Cocoa.framework",
+		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers",
+		"/opt/anaconda3/include/qt",
+		"/opt/anaconda3/include/qt/QtWidgets",
+		"/opt/anaconda3/include/qt/QtGui",
+		"/opt/anaconda3/include/qt/QtCore",
+		"/opt/anaconda3/mkspecs/macx-clang",
 		"/usr/local/include",
 		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
 		"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
 		"/Library/Developer/CommandLineTools/usr/lib/clang/16/include",
 		"/Library/Developer/CommandLineTools/usr/include"
 	],
-	"MOC_MACRO_NAMES" : 
-	[
-		"Q_OBJECT",
-		"Q_GADGET",
-		"Q_NAMESPACE",
-		"Q_NAMESPACE_EXPORT",
-		"Q_GADGET_EXPORT",
-		"Q_ENUM_NS"
-	],
+	"MOC_MACRO_NAMES" : [ "Q_OBJECT", "Q_GADGET", "Q_NAMESPACE", "Q_NAMESPACE_EXPORT" ],
 	"MOC_OPTIONS" : [],
 	"MOC_PATH_PREFIX" : false,
 	"MOC_PREDEFS_CMD" : 
@@ -118,10 +111,10 @@
 	"MULTI_CONFIG" : false,
 	"PARALLEL" : 12,
 	"PARSE_CACHE_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/ParseCache.txt",
-	"QT_MOC_EXECUTABLE" : "/opt/homebrew/Cellar/qt/6.10.1/share/qt/libexec/moc",
+	"QT_MOC_EXECUTABLE" : "/opt/anaconda3/bin/moc",
 	"QT_UIC_EXECUTABLE" : "",
-	"QT_VERSION_MAJOR" : 6,
-	"QT_VERSION_MINOR" : 10,
+	"QT_VERSION_MAJOR" : 5,
+	"QT_VERSION_MINOR" : 15,
 	"SETTINGS_FILE" : "/Users/artemisatrevino/argos3/Collision_Free_CPFA/build/source/CPFA/CMakeFiles/CPFA_loop_functions_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
@@ -136,6 +129,6 @@
 			null
 		]
 	],
-	"USE_BETTER_GRAPH" : true,
+	"USE_BETTER_GRAPH" : false,
 	"VERBOSITY" : 0
 }
