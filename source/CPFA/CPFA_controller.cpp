@@ -21,18 +21,7 @@ CPFA_controller::CPFA_controller() :
     m_pcLEDs(NULL),
     TrailColor(CColor::BLUE),
         updateFidelity(false),
-        last_time_in_seconds(0),
-		// ---- NEW defaults
-    s_WindowSize(100),
-    sw_sample_pos(4),   // sample every TPS/4 ticks (~0.25s at 32 TPS)
-    sw_waitTicks(1),
-    sw_CongRatioOn(1.6),
-    sw_bad_samples(4),
-    sw_congEps(0.02),
-   sum_window_segments(0.0),
-    sw_LastCongSampleTick(0),
-    sw_badSample_counter(0),
-    InCongested(false)
+        last_time_in_seconds(0)
 {
 }
 
@@ -53,19 +42,6 @@ void CPFA_controller::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings, "ResultsDirectoryPath",      results_path);
 	argos::GetNodeAttribute(settings, "DestinationNoiseStdev",      DestinationNoiseStdev);
 	argos::GetNodeAttribute(settings, "PositionNoiseStdev",      PositionNoiseStdev);
-
-	// --- NEW: congestion params (keeps defaults if absent)
-	argos::GetNodeAttributeOrDefault(settings, "CongWindowSize",    s_WindowSize,    s_WindowSize);
-	argos::GetNodeAttributeOrDefault(settings, "CongSampleDivisor", sw_sample_pos, sw_sample_pos);
-	argos::GetNodeAttributeOrDefault(settings, "CongRatioOn",      sw_CongRatioOn,       sw_CongRatioOn);
-	argos::GetNodeAttributeOrDefault(settings, "CongHOn",           sw_bad_samples,         sw_bad_samples);
-	argos::GetNodeAttributeOrDefault(settings, "CongEps",           sw_congEps,           sw_congEps);
-
-	// Derived cadence (ticks)
-	unsigned tps = SimulationTicksPerSecond();
-	sw_waitTicks = std::max<size_t>(1, tps / std::max<size_t>(1, sw_sample_pos));
-	sw_LastCongSampleTick = SimulationTick(); // start gate from "now"
-
 
 	argos::CVector2 p(GetPosition());
 	SetStartPosition(argos::CVector3(p.GetX(), p.GetY(), 0.0));
@@ -169,10 +145,6 @@ void CPFA_controller::Reset() {
 	isHoldingFood = false;
 	isUsingSiteFidelity = false;
 	isGivingUpSearch = false;
-
-	Cong_ResetWindow();
-	InCongested = false;
-	cooldownUntilTick = 0;
 }
 
 bool CPFA_controller::IsHoldingFood() {
@@ -211,10 +183,6 @@ void CPFA_controller::CPFA() {
 			//SetIsHeadingToNest(false);
 			Surveying();
 			break;
-		
-		case CONGESTED:
-    		Congested();
-    		break;
 	}
 }
 
@@ -295,128 +263,6 @@ void CPFA_controller::SetLoopFunctions(CPFA_loop_functions* lf) {
 
 }
 
-void CPFA_controller::Congested() {
-     // One-tick action: drop carried resource due to congestion, then switch to SEARCHING
-
-    // 1) Re-add item at current position (drop)
-    LoopFunctions->FoodList.push_back(GetPosition());
-    LoopFunctions->FoodColoringList.push_back(argos::CColor::BLACK);
-
-    // 2) No longer carrying
-    isHoldingFood = false;
-
-    // 4) Switch to DEPARTING 
-		argos::Real poissonCDF_sFollowRate = GetPoissonCDF(ResourceDensity, LoopFunctions->RateOfSiteFidelity);
-	    argos::Real r2 = RNG->Uniform(argos::CRange<argos::Real>(0.0, 1.0));
-	    if(updateFidelity && poissonCDF_sFollowRate > r2) {
-		    //log_output_stream << "Using site fidelity" << endl;
-		        SetIsHeadingToNest(false);
-		        SetTarget(SiteFidelityPosition);
-		        isInformed = true;
-	    }
-    //   // use pheromone waypoints
-    //   else if(SetTargetPheromone()) {
-    //       //log_output_stream << "Using site pheremone" << endl;
-    //       isInformed = true;
-    //       isUsingSiteFidelity = false;
-    //   }
-       // use random search
-      else {
-           //log_output_stream << "Using random search" << endl;
-            SetRandomSearchLocation();
-            isInformed = false;
-            isUsingSiteFidelity = false;
-      }
-
-		isGivingUpSearch = false;
-    CPFA_state = DEPARTING;
-    //SetRandomSearchLocation();	
-	SetIsHeadingToNest(false);  
-    // 5) Reset congestion detector bookkeeping
-    Cong_ResetWindow();
-	InCongested = false;
-
-   LOG << GetId() << " dropped resource t="
-        << (argos::Real)SimulationTick() / (argos::Real)SimulationTicksPerSecond()
-        << "s, switching to DEPARTING.\n";
-}
-//resets all congestion track history for the next cycle
-void CPFA_controller::Cong_ResetWindow() {
-    sw_positions.clear();
-    sum_window_segments = 0.0;
-    sw_LastCongSampleTick = SimulationTick();
-    sw_badSample_counter = 0;
-}
-//starts when enough samples are collected
-bool CPFA_controller::Cong_WindowFull() const {
-    return sw_positions.size() >= s_WindowSize;
-}
-//computes tortuosity
-argos::Real CPFA_controller::Cong_CurrentTortuosity() const {
-    if (sw_positions.size() < 2) return 1.0;
-    const argos::CVector2& a = sw_positions.front();
-    const argos::CVector2& b = sw_positions.back();
-    argos::Real euclid = (b - a).Length(); //euclidean distance
-    if (euclid < sw_congEps) return 1.0;  // avoids errors when robots barely moved
-    return sum_window_segments / euclid;
-}
-//mark that the robot is congested
-void CPFA_controller::Cong_Enter() {
-    InCongested = true;
-    LOG << GetId() << " is CONGESTED (t= " 
-        << (argos::Real)SimulationTick() / (argos::Real)SimulationTicksPerSecond() << "s)\n";
-}
-//samples position on a cadence, maintains window, compute tortuosity, updates hysteresis and trigger enter/exit
-void CPFA_controller::Cong_TrySampleAndUpdate() {
-    // Only track while returning (or already congested) AND carrying food
-    if (CPFA_state != RETURNING && CPFA_state != CONGESTED) return;
-    if (!isHoldingFood) return;
-	//sample at a fixed rate
-    const size_t now = SimulationTick();
-    if (now - sw_LastCongSampleTick < sw_waitTicks) return; // cadence gate
-    sw_LastCongSampleTick = now;
-
-    // Sample current 2D position
-    argos::CVector2 cur(GetPosition().GetX(), GetPosition().GetY());
-
-    if (!sw_positions.empty()) {
-        sum_window_segments += (cur - sw_positions.back()).Length();
-    }
-    sw_positions.push_back(cur);
-
-    // Maintain sliding window
-    if (sw_positions.size() > s_WindowSize) {
-        const argos::CVector2 old0 = sw_positions.front();
-        sw_positions.pop_front();
-        const argos::CVector2 new0 = sw_positions.front();
-        sum_window_segments -= (new0 - old0).Length();
-        if (sum_window_segments < 0) sum_window_segments = 0; // numeric guard
-    }
-	//until window is full
-    if (!Cong_WindowFull()) return;
-	//until enough samples
-    const argos::Real tau = Cong_CurrentTortuosity();
-
-    // Hysteresis counter
-    // Entry-only counters: count consecutive "bad" samples; reset otherwise
-    if (tau >= sw_CongRatioOn) { // bad
-        ++sw_badSample_counter;
-    } else {
-        sw_badSample_counter = 0;
-    }
-
-    // Transitions
-    if (!InCongested && sw_badSample_counter >= sw_bad_samples) {
-        CPFA_state = CONGESTED;
-        Cong_Enter();
-        return;
-    }
-
-}
-
-
-
-
 void CPFA_controller::Departing()
 {
      //LOG<<"Departing..."<<endl;
@@ -430,14 +276,7 @@ void CPFA_controller::Departing()
     log_output_stream << "Current Position: " << GetPosition() << ", Target: " << GetTarget() << endl;
     log_output_stream.close();
     */
-	argos::CVector2 target = GetTarget();
-       argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
-       bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer ||
-                       target.GetX() < ForageRangeX.GetMin() + wallBuffer ||
-                       target.GetY() > ForageRangeY.GetMax() - wallBuffer ||
-                       target.GetY() < ForageRangeY.GetMin() + wallBuffer);
 
-       argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
 	/* When not informed, continue to travel until randomly switching to the searching state. */
     if((SimulationTick() % (SimulationTicksPerSecond() / 2)) == 0) {
        if(isInformed == false){
@@ -459,14 +298,14 @@ void CPFA_controller::Departing()
                  SetIsHeadingToNest(false);
                  SetTarget(turn_vector + GetPosition());
 		   }
-		   else if(distanceToTarget < tolerance){
+		   else if(distanceToTarget < TargetDistanceTolerance){
 			 SetRandomSearchLocation();
 		   }
 	   }
 	 } 
 		 
      /* Are we informed? I.E. using site fidelity or pheromones. */	
-     if(isInformed && distanceToTarget < tolerance) {
+     if(isInformed && distanceToTarget < TargetDistanceTolerance) {
           SearchTime = 0;
           CPFA_state = SEARCHING;
           travelingTime+=SimulationTick()-startTime;//qilu 10/22
@@ -501,15 +340,7 @@ void CPFA_controller::Searching() {
        // If we reached our target search location, set a new one. The 
        // new search location calculation is different based on whether
        // we are currently using informed or uninformed search.
-	   argos::CVector2 target = GetTarget();
-       argos::Real wallBuffer = 0.25; // Distance to consider "near wall"
-       bool nearWall = (target.GetX() > ForageRangeX.GetMax() - wallBuffer || 
-                       target.GetX() < ForageRangeX.GetMin() + wallBuffer || 
-                       target.GetY() > ForageRangeY.GetMax() - wallBuffer || 
-                       target.GetY() < ForageRangeY.GetMin() + wallBuffer);
-
-       argos::Real tolerance = nearWall ? TargetDistanceTolerance * 4.0 : TargetDistanceTolerance;
-       if(distance.SquareLength() < tolerance) {
+       if(distance.SquareLength() < TargetDistanceTolerance) {
          // randomly give up searching
          if(SimulationTick()% (5*SimulationTicksPerSecond())==0 && random < LoopFunctions->ProbabilityOfReturningToNest) {
              
@@ -571,7 +402,7 @@ void CPFA_controller::Searching() {
           
               SetIsHeadingToNest(false);
               
-            //   if(IsAtTarget()) {
+              if(IsAtTarget()) {
                   size_t          t           = SearchTime++;
                   argos::Real     twoPi       = (argos::CRadians::TWO_PI).GetValue();
                   argos::Real     pi          = (argos::CRadians::PI).GetValue();
@@ -605,7 +436,7 @@ void CPFA_controller::Searching() {
                   log_output_stream.close();
                   */
                   SetTarget(turn_vector + GetPosition());
-            //   }
+              }
          }
 	  } //not reach the target location
 	  else {
@@ -660,7 +491,7 @@ void CPFA_controller::Surveying() {
 void CPFA_controller::Returning() {
  //LOG<<"Returning..."<<endl;
 	//SetHoldingFood();
-	Cong_TrySampleAndUpdate();
+
 	// Are we there yet? (To the nest, that is.)
 	if(IsInTheNest()) {
 		// Based on a Poisson CDF, the robot may or may not create a pheromone
@@ -677,7 +508,8 @@ void CPFA_controller::Returning() {
           //while((placementPosition-LoopFunctions->NestPosition).SquareLength()>pow(LoopFunctions->NestRadius/2.0-LoopFunctions->FoodRadius, 2))
             //  placementPosition.Set(LoopFunctions->NestPosition.GetX()+RNG->Gaussian(LoopFunctions->NestRadius/1.2, 0.5), LoopFunctions->NestPosition.GetY()+RNG->Gaussian(LoopFunctions->NestRadius/1.2, 0.5));
      
-          //LoopFunctions->CollectedFoodList.push_back(placementPosition);
+     
+			//LoopFunctions->CollectedFoodList.push_back(placementPosition);
           //Update the location of the nest qilu 09/10
           num_targets_collected++;
           //argos::LOG <<"num_targets_collected = "<<num_targets_collected<< endl;
@@ -727,13 +559,6 @@ void CPFA_controller::Returning() {
         isHoldingFood = false; 
         travelingTime+=SimulationTick()-startTime;//qilu 10/22
         startTime = SimulationTick();//qilu 10/22
-
-        // --- CONGESTION: end-of-return cleanup ---
-        Cong_ResetWindow();
-        InCongested = false;
-        sw_badSample_counter = 0;
-        // ----------------------------------------
-
                 
     } // end of In the nest
 	// Take a small step towards the nest so we don't overshoot by too much if we miss it

@@ -49,28 +49,6 @@ class CPFA_controller : public BaseController {
 
 	private:
 
-	 // ===== Congestion detection (sliding-window tortuosity) =====
-    size_t      s_WindowSize;     // window length 
-    size_t      sw_sample_pos;  // sample every (TPS / divisor) ticks
-    size_t      sw_waitTicks;    // derived: ticks between samples
-    argos::Real sw_CongRatioOn;        // tau threshold to ENTER congested
-    size_t      sw_bad_samples;            // consecutive "bad" samples to enter
-    argos::Real sw_congEps;            // epsilon to guard tiny euclid distances
-
-
-    // Runtime bookkeeping
-    std::deque<argos::CVector2> sw_positions;  // sliding window of positions
-    argos::Real   sum_window_segments;         // total distance traveled along the window (sum of segment lengths)
-    size_t        sw_LastCongSampleTick;       // Stores the tick when the last sample was taken
-    size_t        sw_badSample_counter;            // hysteresis counters: Counts how many consecutive samples had a high tortuosity
-    bool          InCongested;              // state flag
-
-	 // Cooldown after congestion-drop: forbid pickups until this tick
-	size_t        cooldownUntilTick;
-  	size_t        cooldownTicks;            // derived from CongDropCooldownSec * TPS
-
-    // ===== Congestion detection (sliding-window tortuosity) END =====
-
   string 			controllerID;//qilu 07/26/2016
 
 		CPFA_loop_functions* LoopFunctions;
@@ -107,8 +85,7 @@ class CPFA_controller : public BaseController {
 			DEPARTING = 0,
 			SEARCHING = 1,
 			RETURNING = 2,
-			SURVEYING = 3,
-			CONGESTED = 4
+			SURVEYING = 3
 		} CPFA_state;
 
 		/* iAnt CPFA state functions */
@@ -117,15 +94,6 @@ class CPFA_controller : public BaseController {
 		void Searching();
 		void Returning();
 		void Surveying();
-		void Congested();
-
-		// congestion helpers
-		void Cong_ResetWindow(); // clears window
-		void Cong_TrySampleAndUpdate();    /*runs when returning, samples every few ticks, adds new path segment, maintains fixed-size deque
-		waits until window has enough samples(100), computes tortuosity ratio, updates hysteresis counters, calls cong_enter/exit*/
-		bool Cong_WindowFull() const;  //true when sw is full
-		argos::Real Cong_CurrentTortuosity() const; //computes (total path lenght/ straight line distance between oldest and newest positions) return 1 when insufficient data
-		void Cong_Enter(); //marks the start of congestion
 
 		/* CPFA helper functions */
 		void SetRandomSearchLocation();

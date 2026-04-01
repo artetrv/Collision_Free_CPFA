@@ -81,6 +81,9 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	argos::GetNodeAttribute(settings_node, "ClusterWidthY", ClusterWidthY);
 	argos::GetNodeAttribute(settings_node, "FoodRadius", FoodRadius);
     argos::GetNodeAttribute(settings_node, "NestRadius", NestRadius);
+	NestRadiusSquared = NestRadius * NestRadius; 
+	 LOG << "NestRadius=" << NestRadius
+    << " NestRadiusSquared=" << NestRadiusSquared << std::endl;
 	argos::GetNodeAttribute(settings_node, "NestElevation", NestElevation);
     argos::GetNodeAttribute(settings_node, "NestPosition", NestPosition);
     FoodRadiusSquared = FoodRadius*FoodRadius;
@@ -102,18 +105,7 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
 	ForageRangeY.Set(-rangeY, rangeY);
 
         ArenaWidth = ArenaSize[0];
-        
-       /* if(abs(NestPosition.GetX()) < -1) //quad arena
-        {
-            NestRadius *= sqrt(1 + log(ArenaWidth)/log(2));
-        }
-        else
-        {
-            NestRadius *= sqrt(log(ArenaWidth)/log(2));
-        } */
-        
-        //argos::LOG<<"NestRadius="<<NestRadius<<endl;
-	   // Send a pointer to this loop functions object to each controller.
+       
 	   argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
 	   argos::CSpace::TMapPerType::iterator it;
     
@@ -243,44 +235,11 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 	return isFinished;
 }
 
+
 void CPFA_loop_functions::PostExperiment() {
-	  
-     printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
-       
-                  
+    printf("%f, %f, %lu\n", score, getSimTimeInSeconds(), RandomSeed);
+
     if (PrintFinalScore == 1) {
-        string type="";
-        if (FoodDistribution == 0) type = "random";
-        else if (FoodDistribution == 1) type = "cluster";
-        else type = "powerlaw";
-            
-        ostringstream num_tag;
-        num_tag << FoodItemCount; 
-              
-        ostringstream num_robots;
-        num_robots <<  Num_robots;
-   
-        ostringstream arena_width;
-        arena_width << ArenaWidth;
-        
-        ostringstream quardArena;
-        if(abs(NestPosition.GetX())>=1){ //the central nest is not in the center, this is a quard arena
-             quardArena << 1;
-         }
-         else{
-             quardArena << 0;
-        }
-        
-        string header = "./results/"+ type+"_CPFA_r"+num_robots.str()+"_tag"+num_tag.str()+"_"+arena_width.str()+"by"+arena_width.str()+"_quard_arena_" + quardArena.str() +"_";
-       
-        unsigned int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick();//qilu 02/06/2021
-       
-        /* Real total_travel_time=0;
-        Real total_search_time=0;
-        ofstream travelSearchTimeDataOutput((header+"TravelSearchTimeData.txt").c_str(), ios::app);
-        */
-        
-        
         argos::CSpace::TMapPerType& footbots = GetSpace().GetEntitiesByType("foot-bot");
          
         for(argos::CSpace::TMapPerType::iterator it = footbots.begin(); it != footbots.end(); it++) {
@@ -288,55 +247,25 @@ void CPFA_loop_functions::PostExperiment() {
             BaseController& c = dynamic_cast<BaseController&>(footBot.GetControllableEntity().GetController());
             CPFA_controller& c2 = dynamic_cast<CPFA_controller&>(c);
             CollisionTime += c2.GetCollisionTime();
-            
-            /*if(c2.GetStatus() == "SEARCHING"){
-                total_search_time += SimTime-c2.GetTravelingTime();
-                total_travel_time += c2.GetTravelingTime();
-	    }
-            else {
-		total_search_time += c2.GetSearchingTime();
-		total_travel_time += SimTime-c2.GetSearchingTime();
-            } */        
         }
-        //travelSearchTimeDataOutput<< total_travel_time/ticks_per_second<<", "<<total_search_time/ticks_per_second<<endl;
-        //travelSearchTimeDataOutput.close();   
-             
-        ofstream dataOutput( (header+ "iAntTagData.txt").c_str(), ios::app);
-        // output to file
-        if(dataOutput.tellp() == 0) {
-            dataOutput << "tags_collected, collisions_in_seconds, time_in_minutes, random_seed\n";//qilu 08/18
-        }
-    
-        //dataOutput <<data.CollisionTime/16.0<<", "<< time_in_minutes << ", " << data.RandomSeed << endl;
-        //dataOutput << Score() << ", "<<(CollisionTime-16*Score())/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
-        dataOutput << Score() << ", "<<CollisionTime/(2*ticks_per_second)<< ", "<< curr_time_in_minutes <<", "<<RandomSeed<<endl;
-        dataOutput.close();
-    
-        ofstream forageDataOutput((header+"ForageData.txt").c_str(), ios::app);
-        if(ForageList.size()!=0) forageDataOutput<<"Forage: "<< ForageList[0];
-        for(size_t i=1; i< ForageList.size(); i++) forageDataOutput<<", "<<ForageList[i];
-        forageDataOutput<<"\n";
-        forageDataOutput.close();
-        
-        ofstream trajOutput( (header+ "iAntTrajData.txt").c_str(), ios::app);
-        // output to file
-        //if(trajOutput.tellp() == 0) {
-            trajOutput << "trajs\n";//qilu 11/2023
-        //}
-        
-        for(map<string, std::vector<CVector2>>::iterator it= Trajectory.begin(); it!= Trajectory.end(); ++it) {
-			
-			for(size_t j = 0; j < it->second.size(); j++) {
-				trajOutput << it->second[j]<<"; ";
-			}
-			trajOutput << "\n";
-		
-		}
-        
-		trajOutput.close();
-        
-      }  
+			/*---------RESULTS-------------*/
+        // unsigned int ticks_per_second = GetSimulator().GetPhysicsEngine("dyn2d").GetInverseSimulationClockTick();
+        // double collisions_sec = CollisionTime / (2.0 * ticks_per_second);
 
+        // std::ofstream dataOutput("'INSERT_FILENAME_HERE'", std::ios::app);
+
+        // if(dataOutput.tellp() == 0) {
+        //     dataOutput << "score,time_seconds,collisions_seconds,seed\n";
+        // }
+
+        // dataOutput << score << ","
+        //            << getSimTimeInSeconds() << ","
+        //            << collisions_sec << ","
+        //            << RandomSeed << "\n";
+
+        // dataOutput.close();
+		/*---------ENDS HERE-------------*/
+    }
 }
 
 
