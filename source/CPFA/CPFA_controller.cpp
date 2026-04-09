@@ -120,7 +120,7 @@ void CPFA_controller::ControlStep() {
 	// Robot memory logging begins only after spiral search is complete
 	if(
 		SearchAlgorithmMode == 1 &&
-	   curr_time_in_seconds - lastMemoryStorageTime >= 30.0 && 
+	   curr_time_in_seconds - lastMemoryStorageTime >= 25.0 && 
 	   !isHoldingFood && 
 	   !isInformed && 
 	   CPFA_state == SEARCHING &&
@@ -132,7 +132,7 @@ void CPFA_controller::ControlStep() {
 		robotMemory.push_back(currentPosition);
 		// argos::LOG << "Robot " << controllerID << " (Enhanced) storing position: " << currentPosition << std::endl;
 		// Maintain sliding window of maximum 10 locations
-		if(robotMemory.size() > 5) {
+		if(robotMemory.size() > 20) {
 			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry
 		}
 		
@@ -1080,48 +1080,48 @@ void CPFA_controller::SetRandomSearchLocation() {
 			// Lower minVisitCells to 5 to make it scalable 
 			// We do this by picking 5 cells from minVisitCells randomly because there might be too many cells in the beginning.
 			// Reduce from O(N * N) to O(5)
-			std::vector<argos::CVector2> reducedMinVisitCells;
-			for(int i = 0; i < 5 && !minVisitCells.empty(); i++) {
-				int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, minVisitCells.size()));
-				reducedMinVisitCells.push_back(minVisitCells[randomIndex]);
-				minVisitCells.erase(minVisitCells.begin() + randomIndex);
-			}
-			minVisitCells = reducedMinVisitCells;
+			// std::vector<argos::CVector2> reducedMinVisitCells;
+			// for(int i = 0; i < 5 && !minVisitCells.empty(); i++) {
+			// 	int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, minVisitCells.size()));
+			// 	reducedMinVisitCells.push_back(minVisitCells[randomIndex]);
+			// 	minVisitCells.erase(minVisitCells.begin() + randomIndex);
+			// }
+			// minVisitCells = reducedMinVisitCells;
 
 			// Adjust each selected cell to ensure all 8 neighbors are within bounds
-			std::vector<argos::CVector2> adjustedMinVisitCells;
-			for(const auto& cellCenter : minVisitCells) {
-				argos::CVector2 adjustedCellCenter = cellCenter;
+			// std::vector<argos::CVector2> adjustedMinVisitCells;
+			// for(const auto& cellCenter : minVisitCells) {
+			// 	argos::CVector2 adjustedCellCenter = cellCenter;
 				
-				// Check and adjust for left boundary (x-direction)
-				if(cellCenter.GetX() - cellSizeX < ForageRangeX.GetMin()) {
-					adjustedCellCenter.SetX(ForageRangeX.GetMin() + cellSizeX);
-					argos::LOG << "Robot " << controllerID << " adjusted cell left boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for right boundary (x-direction)  
-				if(cellCenter.GetX() + cellSizeX > ForageRangeX.GetMax()) {
-					adjustedCellCenter.SetX(ForageRangeX.GetMax() - cellSizeX);
-					argos::LOG << "Robot " << controllerID << " adjusted cell right boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for bottom boundary (y-direction)
-				if(cellCenter.GetY() - cellSizeY < ForageRangeY.GetMin()) {
-					adjustedCellCenter.SetY(ForageRangeY.GetMin() + cellSizeY);
-					argos::LOG << "Robot " << controllerID << " adjusted cell bottom boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for top boundary (y-direction)
-				if(cellCenter.GetY() + cellSizeY > ForageRangeY.GetMax()) {
-					adjustedCellCenter.SetY(ForageRangeY.GetMax() - cellSizeY);
-					argos::LOG << "Robot " << controllerID << " adjusted cell top boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
+			// 	// Check and adjust for left boundary (x-direction)
+			// 	if(cellCenter.GetX() - cellSizeX < ForageRangeX.GetMin()) {
+			// 		adjustedCellCenter.SetX(ForageRangeX.GetMin() + cellSizeX);
+			// 		argos::LOG << "Robot " << controllerID << " adjusted cell left boundary: " 
+			// 				  << cellCenter << " -> " << adjustedCellCenter << std::endl;
+			// 	}
+			// 	// Check and adjust for right boundary (x-direction)  
+			// 	if(cellCenter.GetX() + cellSizeX > ForageRangeX.GetMax()) {
+			// 		adjustedCellCenter.SetX(ForageRangeX.GetMax() - cellSizeX);
+			// 		argos::LOG << "Robot " << controllerID << " adjusted cell right boundary: " 
+			// 				  << cellCenter << " -> " << adjustedCellCenter << std::endl;
+			// 	}
+			// 	// Check and adjust for bottom boundary (y-direction)
+			// 	if(cellCenter.GetY() - cellSizeY < ForageRangeY.GetMin()) {
+			// 		adjustedCellCenter.SetY(ForageRangeY.GetMin() + cellSizeY);
+			// 		argos::LOG << "Robot " << controllerID << " adjusted cell bottom boundary: " 
+			// 				  << cellCenter << " -> " << adjustedCellCenter << std::endl;
+			// 	}
+			// 	// Check and adjust for top boundary (y-direction)
+			// 	if(cellCenter.GetY() + cellSizeY > ForageRangeY.GetMax()) {
+			// 		adjustedCellCenter.SetY(ForageRangeY.GetMax() - cellSizeY);
+			// 		argos::LOG << "Robot " << controllerID << " adjusted cell top boundary: " 
+			// 				  << cellCenter << " -> " << adjustedCellCenter << std::endl;
+			// 	}
 				
-				adjustedMinVisitCells.push_back(adjustedCellCenter);
-			}
+			// 	adjustedMinVisitCells.push_back(adjustedCellCenter);
+			// }
 			// Use the adjusted cells for neighbor calculation
-			minVisitCells = adjustedMinVisitCells;
+			// minVisitCells = adjustedMinVisitCells;
 
             argos::CVector2 bestCell;
             int minNeighborSum = INT_MAX;
