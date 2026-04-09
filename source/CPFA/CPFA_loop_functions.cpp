@@ -126,6 +126,10 @@ void CPFA_loop_functions::Init(argos::TConfigurationNode &node) {
         // Create the grid with a default cell size of 1 meters
         create_grid(1.0);
         
+        // Start wall-clock timer for performance metrics
+        simulation_start_time = std::chrono::high_resolution_clock::now();
+        total_wall_clock_time_seconds = 0.0;
+        
        /* if(abs(NestPosition.GetX()) < -1) //quad arena
         {
             NestRadius *= sqrt(1 + log(ArenaWidth)/log(2));
@@ -349,6 +353,26 @@ bool CPFA_loop_functions::IsExperimentFinished() {
 }
 
 void CPFA_loop_functions::PostExperiment() {
+	  
+    // Calculate wall-clock time
+    auto simulation_end_time = std::chrono::high_resolution_clock::now();
+    total_wall_clock_time_seconds = std::chrono::duration<double>(simulation_end_time - simulation_start_time).count();
+    
+    printf("\n=== PERFORMANCE METRICS ===\n");
+    printf("Total Wall-Clock Time: %.6f seconds\n", total_wall_clock_time_seconds);
+    
+    // Get and display grid memory metrics
+    GridMemoryMetrics grid_metrics = gridMemory.get_metrics();
+    printf("Grid Query Latency: %.2f microseconds (avg), %zu operations\n", 
+           grid_metrics.query_avg_latency, grid_metrics.query_count);
+    printf("Grid Update Latency: %.2f microseconds (avg), %zu operations\n", 
+           grid_metrics.update_avg_latency, grid_metrics.update_count);
+    printf("===========================\n\n");
+    
+    // Export performance metrics to CSV
+    createDirectoryIfNotExists("performance_metrics");
+    std::string metricsFilename = "performance_metrics/metrics_" + std::to_string(RandomSeed) + ".csv";
+    exportPerformanceMetricsToCSV(metricsFilename);
 	  
      // Calculate cells visited metric by counting non-zero visit counts
      size_t cellsVisited = 0;
@@ -1448,4 +1472,36 @@ void CPFA_loop_functions::AddSearchTrajectoryPoint(const std::string& robotId, c
 
 void CPFA_loop_functions::ClearSearchTrajectory(const std::string& robotId) {
     SearchTrajectories.erase(robotId);
-}REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")
+}
+
+void CPFA_loop_functions::exportPerformanceMetricsToCSV(const std::string& filename) {
+	std::ofstream file(filename);
+	if (!file.is_open()) {
+		argos::LOGERR << "Failed to open file for performance metrics export: " << filename << std::endl;
+		return;
+	}
+
+	// Get grid memory metrics
+	GridMemoryMetrics grid_metrics = gridMemory.get_metrics();
+
+	// Write CSV header
+	file << "Metric,Value,Unit\n";
+
+	// Write performance metrics
+	file << "Total Wall-Clock Time," << total_wall_clock_time_seconds << ",seconds\n";
+	file << "Grid Query Count," << grid_metrics.query_count << ",operations\n";
+	file << "Grid Query Avg Latency," << grid_metrics.query_avg_latency << ",microseconds\n";
+	file << "Grid Query Total Time," << grid_metrics.query_total_microseconds << ",microseconds\n";
+	file << "Grid Update Count," << grid_metrics.update_count << ",operations\n";
+	file << "Grid Update Avg Latency," << grid_metrics.update_avg_latency << ",microseconds\n";
+	file << "Grid Update Total Time," << grid_metrics.update_total_microseconds << ",microseconds\n";
+	file << "Simulation Score," << score << ",food items\n";
+	file << "Simulation Time," << getSimTimeInSeconds() << ",seconds\n";
+	file << "Random Seed," << RandomSeed << ",N/A\n";
+	file << "Cells Visited," << 0 << ",cells\n"; // Will be calculated externally if needed
+
+	file.close();
+	argos::LOG << "Performance metrics exported to: " << filename << std::endl;
+}
+
+REGISTER_LOOP_FUNCTIONS(CPFA_loop_functions, "CPFA_loop_functions")

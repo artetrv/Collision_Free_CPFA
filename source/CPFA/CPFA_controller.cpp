@@ -120,7 +120,7 @@ void CPFA_controller::ControlStep() {
 	// Robot memory logging begins only after spiral search is complete
 	if(
 		SearchAlgorithmMode == 1 &&
-	   curr_time_in_seconds - lastMemoryStorageTime >= 30.0 && 
+	   curr_time_in_seconds - lastMemoryStorageTime >= 25.0 && 
 	   !isHoldingFood && 
 	   !isInformed && 
 	   CPFA_state == SEARCHING &&
@@ -132,7 +132,7 @@ void CPFA_controller::ControlStep() {
 		robotMemory.push_back(currentPosition);
 		// argos::LOG << "Robot " << controllerID << " (Enhanced) storing position: " << currentPosition << std::endl;
 		// Maintain sliding window of maximum 10 locations
-		if(robotMemory.size() > 5) {
+		if(robotMemory.size() > 20) {
 			robotMemory.erase(robotMemory.begin()); // Remove the oldest entry
 		}
 		
@@ -1035,7 +1035,7 @@ void CPFA_controller::SetRandomSearchLocation() {
     argos::Real x = 0.0, y = 0.0;
     argos::CVector2 candidateTarget;
     
-    // Apply enhanced algorithm with full grid scanning if mode 1 (enhanced)
+    // Apply enhanced algorithm using optimized BST-based grid lookup
     if(SearchAlgorithmMode == 1) {
         // Get grid parameters dynamically from loop functions
         const size_t gridWidth = LoopFunctions->GridWidth;
@@ -1045,129 +1045,58 @@ void CPFA_controller::SetRandomSearchLocation() {
         const argos::Real cellSizeX = arenaWidth / gridWidth;
         const argos::Real cellSizeY = arenaHeight / gridHeight;
         
-        std::vector<argos::CVector2> minVisitCells;
-        int minVisitCount = INT_MAX;
+        // Use O(1) optimized lookup to get least-visited cell
+        int leastVisitedCellId = LoopFunctions->gridMemory.get_least_visited_cell();
         
-        // Scan entire grid to find cells with minimum visit count
-        // This is O(gridWidth × gridHeight)
-        for(size_t i = 0; i < gridWidth; i++) {
-            for(size_t j = 0; j < gridHeight; j++) {
-                // Convert grid indices to world coordinates (center of each cell)
-                argos::Real worldX = ForageRangeX.GetMin() + (i + 0.5) * cellSizeX;
-                argos::Real worldY = ForageRangeY.GetMin() + (j + 0.5) * cellSizeY;
-                argos::CVector2 cellCenter(worldX, worldY);
-                // argos::LOG << "Robot " << controllerID << " checking cell (" << i << "," << j << ") at " << cellCenter << std::endl;
-                // Get visit count for this cell
-                int visitCount = LoopFunctions->getGridVisitCount(cellCenter);
+        // Convert cell_id back to 2D grid coordinates
+        int grid_y = leastVisitedCellId / static_cast<int>(gridWidth);
+        int grid_x = leastVisitedCellId % static_cast<int>(gridWidth);
+        
+        // Convert grid coordinates to world coordinates (center of cell)
+        argos::Real worldX = ForageRangeX.GetMin() + (grid_x + 0.5) * cellSizeX;
+        argos::Real worldY = ForageRangeY.GetMin() + (grid_y + 0.5) * cellSizeY;
+        argos::CVector2 leastVisitedPos(worldX, worldY);
+        
+        argos::LOG << "Robot " << controllerID << " selected least-visited cell (ID: " 
+                  << leastVisitedCellId << " at grid [" << grid_x << "," << grid_y 
+                  << "]) with position: " << leastVisitedPos << std::endl;
+        
+        // Build list of candidate cells: least-visited cell + its neighbors
+        std::vector<argos::CVector2> candidateCells;
+        candidateCells.push_back(leastVisitedPos);
+        
+        // Add immediate neighbors (8-neighborhood)
+        for(int dx = -1; dx <= 1; dx++) {
+            for(int dy = -1; dy <= 1; dy++) {
+                if(dx == 0 && dy == 0) continue; // Skip center, already added
                 
-                if(visitCount < minVisitCount) {
-                    // Found new minimum - clear list and add this cell
-                    minVisitCount = visitCount;
-                    minVisitCells.clear();
-                    minVisitCells.push_back(cellCenter);
-                } else if(visitCount == minVisitCount) {
-                    // Found another cell with same minimum count - add to list
-                    minVisitCells.push_back(cellCenter);
+                int neighbor_x = grid_x + dx;
+                int neighbor_y = grid_y + dy;
+                
+                // Check bounds
+                if(neighbor_x >= 0 && neighbor_x < static_cast<int>(gridWidth) &&
+                   neighbor_y >= 0 && neighbor_y < static_cast<int>(gridHeight)) {
+                    argos::Real neighbor_worldX = ForageRangeX.GetMin() + (neighbor_x + 0.5) * cellSizeX;
+                    argos::Real neighbor_worldY = ForageRangeY.GetMin() + (neighbor_y + 0.5) * cellSizeY;
+                    candidateCells.push_back(argos::CVector2(neighbor_worldX, neighbor_worldY));
                 }
             }
         }
         
-
-
-        // Randomly select from cells with minimum visit count
-        if(!minVisitCells.empty()) {
-
-			// Lower minVisitCells to 5 to make it scalable 
-			// We do this by picking 5 cells from minVisitCells randomly because there might be too many cells in the beginning.
-			// Reduce from O(N * N) to O(5)
-			std::vector<argos::CVector2> reducedMinVisitCells;
-			for(int i = 0; i < 5 && !minVisitCells.empty(); i++) {
-				int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, minVisitCells.size()));
-				reducedMinVisitCells.push_back(minVisitCells[randomIndex]);
-				minVisitCells.erase(minVisitCells.begin() + randomIndex);
-			}
-			minVisitCells = reducedMinVisitCells;
-
-			// Adjust each selected cell to ensure all 8 neighbors are within bounds
-			std::vector<argos::CVector2> adjustedMinVisitCells;
-			for(const auto& cellCenter : minVisitCells) {
-				argos::CVector2 adjustedCellCenter = cellCenter;
-				
-				// Check and adjust for left boundary (x-direction)
-				if(cellCenter.GetX() - cellSizeX < ForageRangeX.GetMin()) {
-					adjustedCellCenter.SetX(ForageRangeX.GetMin() + cellSizeX);
-					argos::LOG << "Robot " << controllerID << " adjusted cell left boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for right boundary (x-direction)  
-				if(cellCenter.GetX() + cellSizeX > ForageRangeX.GetMax()) {
-					adjustedCellCenter.SetX(ForageRangeX.GetMax() - cellSizeX);
-					argos::LOG << "Robot " << controllerID << " adjusted cell right boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for bottom boundary (y-direction)
-				if(cellCenter.GetY() - cellSizeY < ForageRangeY.GetMin()) {
-					adjustedCellCenter.SetY(ForageRangeY.GetMin() + cellSizeY);
-					argos::LOG << "Robot " << controllerID << " adjusted cell bottom boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				// Check and adjust for top boundary (y-direction)
-				if(cellCenter.GetY() + cellSizeY > ForageRangeY.GetMax()) {
-					adjustedCellCenter.SetY(ForageRangeY.GetMax() - cellSizeY);
-					argos::LOG << "Robot " << controllerID << " adjusted cell top boundary: " 
-							  << cellCenter << " -> " << adjustedCellCenter << std::endl;
-				}
-				
-				adjustedMinVisitCells.push_back(adjustedCellCenter);
-			}
-			// Use the adjusted cells for neighbor calculation
-			minVisitCells = adjustedMinVisitCells;
-
-            argos::CVector2 bestCell;
-            int minNeighborSum = INT_MAX;
-            std::vector<argos::CVector2> bestCells;
-            
-            // For each cell with minimum visit count, calculate sum of neighbor visit counts
-            for(const auto& cellCenter : minVisitCells) {
-                int neighborSum = 0;
-                
-                // Check 8-neighbor cells
-                for(int dx = -1; dx <= 1; dx++) {
-                    for(int dy = -1; dy <= 1; dy++) {
-                        if(dx == 0 && dy == 0) continue; // Skip the center cell itself
-                        
-                        argos::CVector2 neighborPos = cellCenter + argos::CVector2(dx * cellSizeX, dy * cellSizeY);
-                        neighborSum += LoopFunctions->getGridVisitCount(neighborPos);
-                    }
-                }
-                
-                if(neighborSum < minNeighborSum) {
-                    // Found cell with smaller neighbor sum - clear list and add this cell
-                    minNeighborSum = neighborSum;
-                    bestCells.clear();
-                    bestCells.push_back(cellCenter);
-                } else if(neighborSum == minNeighborSum) {
-                    // Found another cell with same minimum neighbor sum - add to list
-                    bestCells.push_back(cellCenter);
-                }
-            }
-            
-            // Randomly select from cells with minimum neighbor sum
-            int randomIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, bestCells.size()));
-            argos::CVector2 selectedCellCenter = bestCells[randomIndex];
+        // Randomly select from candidate cells (center + valid neighbors)
+        if(!candidateCells.empty()) {
+            int selectedIndex = RNG->Uniform(argos::CRange<argos::UInt32>(0, candidateCells.size()));
+            argos::CVector2 selectedCellCenter = candidateCells[selectedIndex];
             
             // Generate random point within the selected cell
             argos::Real randomOffsetX = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeX/2.0, cellSizeX/2.0));
             argos::Real randomOffsetY = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeY/2.0, cellSizeY/2.0));
             candidateTarget = selectedCellCenter + argos::CVector2(randomOffsetX, randomOffsetY);
-            // candidateTarget = selectedCellCenter;
             
         	std::vector<argos::CVector2> selectedLocation = {candidateTarget};
-        	LoopFunctions->receiveRobotMemory(controllerID, selectedLocation);            
-            // argos::LOG << "Robot " << controllerID << " selected cell with minimum visit count " 
-            //           << minVisitCount << " from " << minVisitCells.size() 
-            //           << " equally minimal cells, with minimum neighbor sum " << minNeighborSum 
-            //           << " from " << bestCells.size() << " best neighbor candidates" << std::endl;
+        	LoopFunctions->receiveRobotMemory(controllerID, selectedLocation);
+            
+            argos::LOG << "Robot " << controllerID << " selected from least-visited cell + neighbors" << std::endl;
                       
             // Generate spiral search locations for the selected cell and its 8 neighbors
             spiralSearchLocations.clear();
@@ -1175,11 +1104,10 @@ void CPFA_controller::SetRandomSearchLocation() {
             currentSpiralIndex = 0;
             isUsingSpiralSearch = true;
             
-            // Add spiral search for the main selected cell (with random point)
-            AddSpiralSearchLocationsAroundPoint(candidateTarget);
+            // Add spiral search for the main least-visited cell
+            AddSpiralSearchLocationsAroundPoint(leastVisitedPos);
             
             // Add spiral search for the 8 neighboring cells in order: right, up-right, top, up-left, left, down-left, bottom, down-right
-            // Order follows clockwise pattern starting from right
             std::vector<std::pair<int, int>> neighborOrder = {
                 {1, 0},   // right
                 {1, 1},   // up-right
@@ -1195,16 +1123,24 @@ void CPFA_controller::SetRandomSearchLocation() {
                 int dx = offset.first;
                 int dy = offset.second;
                 
-                argos::CVector2 neighborCellCenter = selectedCellCenter + argos::CVector2(dx * cellSizeX, dy * cellSizeY);
+                int neighbor_x = grid_x + dx;
+                int neighbor_y = grid_y + dy;
                 
-                // Generate random point within the neighbor cell
-                argos::Real neighborRandomOffsetX = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeX/2.0, cellSizeX/2.0));
-                argos::Real neighborRandomOffsetY = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeY/2.0, cellSizeY/2.0));
-                argos::CVector2 neighborRandomPoint = neighborCellCenter + argos::CVector2(neighborRandomOffsetX, neighborRandomOffsetY);
-                // argos::CVector2 neighborRandomPoint = neighborCellCenter;
+                // Check bounds
+                if(neighbor_x >= 0 && neighbor_x < static_cast<int>(gridWidth) &&
+                   neighbor_y >= 0 && neighbor_y < static_cast<int>(gridHeight)) {
+                    argos::Real neighbor_worldX = ForageRangeX.GetMin() + (neighbor_x + 0.5) * cellSizeX;
+                    argos::Real neighbor_worldY = ForageRangeY.GetMin() + (neighbor_y + 0.5) * cellSizeY;
+                    argos::CVector2 neighborCellCenter(neighbor_worldX, neighbor_worldY);
+                    
+                    // Generate random point within the neighbor cell
+                    argos::Real neighborRandomOffsetX = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeX/2.0, cellSizeX/2.0));
+                    argos::Real neighborRandomOffsetY = RNG->Uniform(argos::CRange<argos::Real>(-cellSizeY/2.0, cellSizeY/2.0));
+                    argos::CVector2 neighborRandomPoint = neighborCellCenter + argos::CVector2(neighborRandomOffsetX, neighborRandomOffsetY);
 
-                // Add spiral search around this neighbor's random point
-                AddSpiralSearchLocationsAroundPoint(neighborRandomPoint);
+                    // Add spiral search around this neighbor's random point
+                    AddSpiralSearchLocationsAroundPoint(neighborRandomPoint);
+                }
             }
         }        
         SetIsHeadingToNest(true); // Turn off error for this

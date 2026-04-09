@@ -7,6 +7,7 @@
 #include <source/CPFA/CPFA_controller.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
 #include <source/CPFA/OptimizedGridMemory.h>
+#include <chrono>
 
 using namespace argos;
 using namespace std;
@@ -102,6 +103,9 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		size_t lastMilestone = 0;  // Track the last milestone reached (0-10)
 		void recordResourceMilestone(size_t currentScore);
 		void exportResourceMilestonesToCSV(const std::string& filename);
+		
+		/* Performance metrics tracking */
+		void exportPerformanceMetricsToCSV(const std::string& filename);
 
 	protected:
 
@@ -184,7 +188,11 @@ class CPFA_loop_functions : public argos::CLoopFunctions
 		OptimizedGridMemory gridMemory;
 		argos::Real CellSize;
 		size_t GridWidth;
-		size_t GridHeight;		
+		size_t GridHeight;
+		
+		/* Performance timing members */
+		std::chrono::high_resolution_clock::time_point simulation_start_time;
+		double total_wall_clock_time_seconds;		
 	private:		/* private helper functions */
 		void RandomFoodDistribution();
 		void ClusterFoodDistribution();

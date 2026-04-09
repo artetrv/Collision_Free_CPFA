@@ -4,6 +4,24 @@
 #include <set>
 #include <vector>
 #include <stdexcept>
+#include <chrono>
+
+/**
+ * @struct GridMemoryMetrics
+ * @brief Performance metrics for grid memory operations.
+ */
+struct GridMemoryMetrics
+{
+    // Query metrics
+    size_t query_count = 0;
+    long long query_total_microseconds = 0;
+    double query_avg_latency = 0.0;
+
+    // Update metrics
+    size_t update_count = 0;
+    long long update_total_microseconds = 0;
+    double update_avg_latency = 0.0;
+};
 
 /**
  * @class OptimizedGridMemory
@@ -65,6 +83,9 @@ public:
      */
     int get_least_visited_cell() const
     {
+        // Start timer for query latency measurement
+        auto query_start = std::chrono::high_resolution_clock::now();
+
         if (visit_queue.empty())
         {
             throw std::runtime_error("OptimizedGridMemory: visit_queue is empty. "
@@ -73,7 +94,17 @@ public:
 
         // The set is sorted by visit_count (first element of pair)
         // The least-visited cell is at the beginning
-        return visit_queue.begin()->second;
+        int result = visit_queue.begin()->second;
+
+        // End timer and record latency
+        auto query_end = std::chrono::high_resolution_clock::now();
+        long long query_duration = std::chrono::duration_cast<std::chrono::microseconds>(query_end - query_start).count();
+        
+        // Update metrics (note: modifying mutable member in const function for metrics only)
+        metrics.query_count++;
+        metrics.query_total_microseconds += query_duration;
+
+        return result;
     }
 
     /**
@@ -93,6 +124,9 @@ public:
      */
     void update_visit(int cell_id)
     {
+        // Start timer for update latency measurement
+        auto update_start = std::chrono::high_resolution_clock::now();
+
         // Bounds check
         if (cell_id < 0 || cell_id >= static_cast<int>(current_counts.size()))
         {
@@ -115,6 +149,14 @@ public:
 
         // Step 5: Insert the new pair into the set (O(log n))
         visit_queue.insert({new_count, cell_id});
+
+        // End timer and record latency
+        auto update_end = std::chrono::high_resolution_clock::now();
+        long long update_duration = std::chrono::duration_cast<std::chrono::microseconds>(update_end - update_start).count();
+        
+        // Update metrics
+        metrics.update_count++;
+        metrics.update_total_microseconds += update_duration;
     }
 
     /**
@@ -182,6 +224,43 @@ public:
         }
     }
 
+    /**
+     * @brief Get the current performance metrics.
+     *
+     * @return GridMemoryMetrics struct with query and update latency information.
+     */
+    GridMemoryMetrics get_metrics() const
+    {
+        GridMemoryMetrics result = metrics;
+        
+        // Calculate average latencies
+        if (result.query_count > 0)
+        {
+            result.query_avg_latency = static_cast<double>(result.query_total_microseconds) / result.query_count;
+        }
+        
+        if (result.update_count > 0)
+        {
+            result.update_avg_latency = static_cast<double>(result.update_total_microseconds) / result.update_count;
+        }
+        
+        return result;
+    }
+
+    /**
+     * @brief Reset performance metrics to zero.
+     */
+    void reset_metrics()
+    {
+        metrics.query_count = 0;
+        metrics.query_total_microseconds = 0;
+        metrics.query_avg_latency = 0.0;
+        
+        metrics.update_count = 0;
+        metrics.update_total_microseconds = 0;
+        metrics.update_avg_latency = 0.0;
+    }
+
 private:
     /**
      * @brief Priority queue of cells sorted by visit count (ascending).
@@ -199,6 +278,12 @@ private:
      * Value: current visit count for that cell
      */
     std::vector<int> current_counts;
+
+    /**
+     * @brief Performance metrics for grid operations.
+     * Mutable to allow metrics tracking in const functions.
+     */
+    mutable GridMemoryMetrics metrics;
 };
 
 #endif /* OPTIMIZED_GRID_MEMORY_H */
